@@ -51,6 +51,17 @@ function OrderStatusBadge($status) {
         case 'DangGiaoHang': return '<span class="badge bg-info">Đang giao hàng</span>';
         case 'DaHoanThanh': return '<span class="badge bg-success">Đã hoàn thành</span>';
         case 'Huy': return '<span class="badge bg-danger">Hủy</span>';
+        case 'HoanHang': return '<span class="badge bg-info">Hoàn hàng</span>';
+        default: return '<span class="badge bg-secondary">Không xác định</span>';
+    }
+}
+function ServiceStatusBadge($status) {
+    switch ($status) {
+        case 'ChoXuLy': return '<span class="badge bg-warning">Chờ xử lý</span>';
+        case 'XacNhan': return '<span class="badge bg-info">Xác nhận</span>';
+        case 'DaHoanThanh': return '<span class="badge bg-success">Đã hoàn thành</span>';
+        case 'Huy': return '<span class="badge bg-danger">Hủy</span>';
+        case 'TuChoi': return '<span class="badge bg-danger">Từ chối</span>';
         default: return '<span class="badge bg-secondary">Không xác định</span>';
     }
 }
@@ -120,9 +131,11 @@ function OrderStatusBadge($status) {
                                 <td><?=OrderStatusBadge($order['TrangThai'])?></td>
                                 <td><?=date('d-m-Y H:i', strtotime($order['CreatedAt']))?></td>
                                 <td>
-                                    <a href="print-order.php?order-id=<?=$order['MaDonDatHang']?>" class="btn btn-info" title="Xem đơn">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
+                                    <?php if ($order['TrangThai'] == 'DaHoanThanh'): ?>
+                                        <a href="print-order.php?order-id=<?=$order['MaDonDatHang']?>" class="btn btn-info" title="In đơn">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -159,7 +172,7 @@ function OrderStatusBadge($status) {
                                 <td><?=$svc['BienSoXe']?></td>
                                 <td><?=date('d-m-Y H:i', strtotime($svc['NgayDat']))?></td>
                                 <td><?=date('d-m-Y H:i', strtotime($svc['NgayHen']))?></td>
-                                <td><?=$svc['TrangThai']?></td>
+                                <td><?=ServiceStatusBadge($svc['TrangThai'])?></td>
                                 <td><?=$svc['GhiChu']?></td>
                             </tr>
                             <?php endforeach; ?>
