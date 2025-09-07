@@ -100,6 +100,11 @@ $items = Database::GetData($sql);
                 ?>
             </tbody>
         </table>
+           <!-- Mã giảm giá & Giảm giá -->
+    <div class="mb-3 text-end">
+        <p><b>Mã giảm giá:</b> <?= !empty($orderUser['MaGiamGia']) ? $orderUser['MaGiamGia'] : '-' ?></p>
+        <p><b>Giảm giá:</b> <?= !empty($orderUser['GiamGia']) ? Helper::Currency($orderUser['GiamGia']) : '0 ₫' ?></p>
+    </div>
 
         <div class="text-end mb-3">
             <p><b>Tổng tiền:</b> <?=Helper::Currency($orderUser['TongTien'])?></p>
