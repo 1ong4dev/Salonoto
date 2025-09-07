@@ -171,8 +171,10 @@ if (isset($_GET['type']) && $_GET['type'] == 'payment' && $carts) {
                             <tr>
                                 <td class="actions" colspan="6">
                                     <?php
-                                        if (isset($_SESSION['TenTaiKhoan'])) {
+                                        if (isset($_SESSION['TenTaiKhoan']) && $carts && count($carts) > 0) {
                                             echo '<a href="pay.php" class="btn btn-lg btn-success">Tạo đơn hàng</a>';
+                                        } else {
+                                            echo '<span class="text-danger">Giỏ hàng trống, không thể tạo đơn hàng.</span>';
                                         }
                                     ?>
                                 </td>

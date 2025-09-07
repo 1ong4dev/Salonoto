@@ -3,7 +3,7 @@
     <!-- Slider -->
     <div class="block-slider block-slider4">
         <ul class="" id="bxslider-home4">
-                <?php
+             <?php
                         $sql = 'SELECT * FROM sliders WHERE Status = 1';
                         $sliders = Database::GetData($sql);
                             if ($sliders) {
@@ -72,11 +72,27 @@
                             <div class="product-f-image">
                                 <img src="<?=$sp['HinhAnh']?>" alt="">
                                 <div class="product-hover">
-                                    <?php if (isset($_SESSION['MaQuyen']) && $_SESSION['MaQuyen'] == 3) {?>
-                                    <a href="<?='/Salonoto/cart.php?id=' . $sp['MaSP']?>" class="add-to-cart-link"><i class="fa fa-shopping-cart"></i> Thêm vào giỏ</a>
-                                    <?php }?>
-                                    <a href="<?='/Salonoto/details.php?id=' . $sp['MaSP']?>" class="view-details-link"><i class="fa fa-link"></i> Chi tiết</a>
-                                </div>
+    <?php 
+        if (isset($_SESSION['MaQuyen']) && $_SESSION['MaQuyen'] == 3) {
+            // Lấy tồn kho hiện tại của sản phẩm
+            $sqlStock = "SELECT SLTon FROM Kho WHERE MaSP = '" . $sp['MaSP'] . "'";
+            $SLTon = Database::GetData($sqlStock, ['cell' => 'SLTon']);
+
+            // Chỉ hiện nút Thêm vào giỏ nếu còn tồn kho > 0
+            if ($SLTon && $SLTon > 0) { 
+    ?>
+                <a href="/Salonoto/cart.php?id=<?= $sp['MaSP'] ?>" class="add-to-cart-link">
+                    <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
+                </a>
+    <?php 
+            } 
+        } 
+    ?>
+    <a href="<?='/Salonoto/details.php?id=' . $sp['MaSP']?>" class="view-details-link">
+        <i class="fa fa-link"></i> Chi tiết
+    </a>
+</div>
+
                             </div>
                             <h2><a href="<?='/Salonoto/details.php?id=' . $sp['MaSP']?>"><?=$sp['TenSP']?></a></h2>
                             <div class="product-carousel-price">
