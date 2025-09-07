@@ -11,11 +11,22 @@ if (isset($_GET['action']) && isset($_GET['MaGiaoDich'])) {
     if ($payment) {
         $MaDonDatHang = $payment['MaDonDatHang'];
 
-        if ($action == 'confirm') {
-            // Thanh toán hoàn tất
-            Database::NonQuery("UPDATE thanhtoan SET TrangThaiTT='HoanTat', UpdatedAt=NOW() WHERE MaGiaoDich='$MaGiaoDich'");
-            Database::NonQuery("UPDATE dondathang SET TrangThai='DangGiaoHang' WHERE MaDonDatHang='$MaDonDatHang'");
-        } elseif ($action == 'cancel') {
+    if ($action == 'confirm') {
+        // Thanh toán hoàn tất
+        Database::NonQuery("UPDATE thanhtoan SET TrangThaiTT='HoanTat', UpdatedAt=NOW() WHERE MaGiaoDich='$MaGiaoDich'");
+        Database::NonQuery("UPDATE dondathang SET TrangThai='DangGiaoHang' WHERE MaDonDatHang='$MaDonDatHang'");
+
+        // Trừ số lượng trong kho
+        $chiTiet = Database::GetData("SELECT MaSP, SL FROM chitietdondathang WHERE MaDonDatHang='$MaDonDatHang'");
+        if ($chiTiet) {
+            foreach ($chiTiet as $item) {
+                $MaSP = $item['MaSP'];
+                $SL   = $item['SL'];
+                Database::NonQuery("UPDATE kho SET SLTon = SLTon - $SL WHERE MaSP = $MaSP");
+            }
+        }
+    }
+        elseif ($action == 'cancel') {
             // Thanh toán hủy
             Database::NonQuery("UPDATE thanhtoan SET TrangThaiTT='Huy', UpdatedAt=NOW() WHERE MaGiaoDich='$MaGiaoDich'");
             Database::NonQuery("UPDATE dondathang SET TrangThai='Huy' WHERE MaDonDatHang='$MaDonDatHang'");
