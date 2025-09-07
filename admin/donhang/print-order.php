@@ -21,14 +21,14 @@ include '../../config/Helper.php';
 $orderID = isset($_GET['order-id']) ? $_GET['order-id'] : '';
 
 // Lấy thông tin đơn hàng + người mua
-$sql = "SELECT d.*, u.TenDayDu AS Fullname, u.SDT AS Phone, u.Email 
+$sql = "SELECT d.*, u.TenDayDu AS Fullname, u.SDT AS Phone, u.Email, u.DiaChi
         FROM dondathang d
         JOIN users u ON d.TenTaiKhoan = u.TenTaiKhoan
         WHERE d.MaDonDatHang = '$orderID'";
 $orderUser = Database::GetData($sql, ['row' => 0]);
 
-// Lấy chi tiết sản phẩm
-$sql = "SELECT ct.MaSP, sp.TenSP, sp.Gia, ct.SL
+// Lấy chi tiết sản phẩm kèm thông tin bảo hành
+$sql = "SELECT ct.MaSP, sp.TenSP, sp.Gia, ct.SL, ct.NgayBatDauBH, ct.NgayKetThucBH
         FROM chitietdondathang ct
         JOIN sanpham sp ON ct.MaSP = sp.MaSP
         WHERE ct.MaDonDatHang = '$orderID'";
@@ -55,11 +55,11 @@ $payer = Database::GetData($sql, ['row' => 0]);
     <!-- Thông tin khách hàng -->
     <div class="pb-5">
         <h5 class="text-primary"><b>THÔNG TIN KHÁCH HÀNG</b></h5>
-        <p><b>Họ và tên</b>: <?=$orderUser['Fullname']?></p>
-        <p><b>Số điện thoại</b>: <?=$orderUser['Phone']?></p>
-        <p><b>Email</b>: <?=$orderUser['Email']?></p>
-        <p><b>Người lập</b>: <?= $payer ? $payer['TenDayDu'] : '-' ?></p>
-        <p><b>Ngày lập</b>: <?= $orderUser['CreatedAt'] ? Helper::DateTime($orderUser['CreatedAt']) : '-' ?></p>
+        <p><b>Họ và tên:</b> <?=$orderUser['Fullname']?></p>
+        <p><b>Số điện thoại:</b> <?=$orderUser['Phone']?></p>
+        <p><b>Email:</b> <?=$orderUser['Email']?></p>
+        <p><b>Địa chỉ:</b> <?=$orderUser['DiaChi']?></p>
+        <p><b>Ngày lập:</b> <?= $orderUser['CreatedAt'] ? Helper::DateTime($orderUser['CreatedAt'], true) : '-' ?></p>
     </div>
 
     <!-- Chi tiết đơn hàng -->
@@ -73,42 +73,43 @@ $payer = Database::GetData($sql, ['row' => 0]);
                     <th>Giá</th>
                     <th>Số lượng</th>
                     <th>Thành tiền</th>
+                    <th>Ngày bắt đầu BH</th>
+                    <th>Ngày kết thúc BH</th>
                 </tr>
             </thead>
             <tbody>
-                <?php
-                if ($items) {
-                    foreach ($items as $item) {
-                        echo '<tr>
-                            <th>'.$item['MaSP'].'</th>
-                            <td>'.$item['TenSP'].'</td>
-                            <td>'.Helper::Currency($item['Gia']).'</td>
-                            <td>'.$item['SL'].'</td>
-                            <td>'.Helper::Currency($item['Gia'] * $item['SL']).'</td>
-                        </tr>';
-                    }
-                } else {
-                    echo '<tr><td colspan="100%" class="text-center">Không có dữ liệu</td></tr>';
-                }
-                ?>
+                <?php if ($items): ?>
+                    <?php foreach ($items as $item): ?>
+                        <tr>
+                            <th><?= $item['MaSP'] ?></th>
+                            <td><?= $item['TenSP'] ?></td>
+                            <td><?= Helper::Currency($item['Gia']) ?></td>
+                            <td><?= $item['SL'] ?></td>
+                            <td><?= Helper::Currency($item['Gia'] * $item['SL']) ?></td>
+                            <td><?= $item['NgayBatDauBH'] ? Helper::DateTime($item['NgayBatDauBH'], true) : '-' ?></td>
+                            <td><?= $item['NgayKetThucBH'] ? Helper::DateTime($item['NgayKetThucBH'], true) : '-' ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr><td colspan="100%" class="text-center">Không có dữ liệu</td></tr>
+                <?php endif; ?>
             </tbody>
         </table>
 
         <div class="text-end">
-            <p><b>Tổng tiền:</b> <?=Helper::Currency($orderUser['TongTien'])?></p>
+            <p><b>Tổng tiền:</b> <?= Helper::Currency($orderUser['TongTien']) ?></p>
             <p><b>Phí vận chuyển:</b> 0 ₫</p>
-            <?php if ($orderUser['TrangThai'] == 'DaHoanThanh') { ?>
+            <?php if ($orderUser['TrangThai'] == 'DaHoanThanh'): ?>
                 <img style="height: 150px;" src="<?='/Salonoto/assets/img/paid-logo.jpg'?>">
-            <?php } ?>
+            <?php endif; ?>
         </div>
     </div>
 
-    <button onclick="window.print();" class="btn">
-        <b>Link hoá đơn: </b>
-        <a href="<?='https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']?>">
-            <?=$_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']?>
-        </a>
-    </button>
+    <div class="text-center mb-5">
+        <button onclick="window.print();" class="btn btn-primary btn-lg">
+            <b>In hoá đơn</b>
+        </button>
+    </div>
 </div>
 </body>
 </html>

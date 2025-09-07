@@ -30,8 +30,8 @@ if (isset($_GET['return']) && isset($_GET['MaDonDatHang'])) {
 // Hàm hiển thị badge trạng thái
 function OrderStatusBadge($status) {
     switch ($status) {
-        case 'ChuaThanhToan':
-            return '<span class="badge bg-warning">Chưa thanh toán</span>';
+        case 'ChoXuLy':
+            return '<span class="badge bg-warning">Chờ xử lý</span>';
         case 'DangGiaoHang':
             return '<span class="badge bg-info">Đang giao hàng</span>';
         case 'DaHoanThanh':

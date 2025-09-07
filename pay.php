@@ -19,7 +19,7 @@ $user = $userInfo[0];
 
 // Lấy giỏ hàng của user
 $cartItems = Database::GetData("
-    SELECT g.MaSP, g.SL, s.TenSP, s.Gia
+    SELECT g.MaSP, g.SL, s.TenSP, s.Gia, s.ThoiGianBaoHanh
     FROM GioHang g
     JOIN SanPham s ON g.MaSP = s.MaSP
     WHERE g.TenTaiKhoan = '$username'
@@ -37,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Tạo mã đơn hàng duy nhất
     $MaDonDatHang = "DH" . rand(100000,999999);
-    $TrangThai = 'ChuaThanhToan'; // trạng thái enum
+    $TrangThai = 'ChoXuLy';
 
     // 1. Lưu đơn hàng vào bảng dondathang
     $sql = "INSERT INTO dondathang (MaDonDatHang, TongTien, TrangThai, TenTaiKhoan)
@@ -45,12 +45,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $insertOrder = Database::NonQuery($sql);
 
     if ($insertOrder) {
-        // 2. Lưu chi tiết đơn hàng
+        // 2. Lưu chi tiết đơn hàng kèm thời gian bảo hành
         foreach ($cartItems as $item) {
             $MaSP = $item['MaSP'];
             $SL   = $item['SL'];
-            $sqlDetail = "INSERT INTO chitietdondathang (MaSP, MaDonDatHang, SL)
-                        VALUES ($MaSP, '$MaDonDatHang', $SL)";
+
+            // Ép kiểu số nguyên cho thời gian bảo hành
+            $ThoiGianBH = intval($item['ThoiGianBaoHanh'] ?? 0);
+
+            // Ngày bắt đầu và kết thúc bảo hành
+            $NgayBatDauBH = date('Y-m-d H:i:s'); 
+            $NgayKetThucBH = date('Y-m-d H:i:s', strtotime("+$ThoiGianBH year", strtotime($NgayBatDauBH)));
+
+            // Tránh giá trị null hoặc false
+            if (!$NgayKetThucBH) $NgayKetThucBH = $NgayBatDauBH;
+
+            $sqlDetail = "INSERT INTO chitietdondathang 
+                (MaSP, MaDonDatHang, SL, NgayBatDauBH, NgayKetThucBH)
+                VALUES ($MaSP, '$MaDonDatHang', $SL, '$NgayBatDauBH', '$NgayKetThucBH')";
             Database::NonQuery($sqlDetail);
         }
 
@@ -110,7 +122,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         <label>Ghi chú (tuỳ chọn)</label>
                         <textarea name="GhiChu" class="form-control" rows="3" placeholder="Nhập yêu cầu đặc biệt nếu có"></textarea>
                     </div>
-                    <p><strong>Lưu ý khi thanh toán:</strong> Nếu bạn thanh bằng phương thức chuyển khoản Techcombank hoặc Momo thì vui lòng nhập đúng số tiền cần thanh toán và nội dung chuyển khoản như sau: Tên tài khoản + Ngày đặt hàng , VD : "hieu 23/8/2025" </p>
+                    <p><strong>Lưu ý khi thanh toán:</strong> Nếu bạn thanh toán bằng chuyển khoản Techcombank hoặc Momo, hãy nhập đúng số tiền và nội dung chuyển khoản.</p>
                 </div>
             </div>
 
@@ -141,25 +153,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             <input class="form-check-input" type="radio" name="PhuongThucTT" value="ChuyenKhoan" id="bank">
                             <label class="form-check-label" for="bank">Chuyển khoản ngân hàng</label>
                         </div>
-
                         <div id="bank-info" class="p-3 border rounded bg-light mb-3" style="display:none;">
                             <p><strong>Ngân hàng:</strong> Techcombank</p>
                             <p><strong>Số tài khoản:</strong> 0123456789</p>
                             <p><strong>Chủ tài khoản:</strong> NGUYEN VAN A</p>
-                            <img src="assets/img/tech.jpg" alt="QR Techcombank" class="img-fluid rounded shadow-sm mt-2">
                         </div>
-
-                        <!-- Thanh toán Momo -->
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="radio" name="PhuongThucTT" value="Momo" id="momo">
                             <label class="form-check-label" for="momo">Thanh toán qua Momo</label>
                         </div>
-
                         <div id="momo-info" class="p-3 border rounded bg-light mb-3" style="display:none;">
                             <p><strong>Ngân hàng:</strong> Momo</p>
                             <p><strong>Số tài khoản:</strong> 0987654321</p>
                             <p><strong>Chủ tài khoản:</strong> NGUYEN VAN B</p>
-                            <img src="assets/img/momo.jpg" alt="QR Momo" class="img-fluid rounded shadow-sm mt-2">
                         </div>
 
                         <button type="submit" class="btn btn-brand btn-lg w-100">Xác nhận thanh toán</button>

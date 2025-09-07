@@ -52,6 +52,18 @@
                         }
                     ?>
                 </p>
+                
+                <!-- Thêm hiển thị thời gian bảo hành -->
+                <p><b>Thời gian bảo hành: </b>
+                    <?php
+                        if(isset($sanPham['ThoiGianBaoHanh']) && $sanPham['ThoiGianBaoHanh'] > 0){
+                            echo $sanPham['ThoiGianBaoHanh'] . " năm";
+                        } else {
+                            echo "Chưa có thông tin";
+                        }
+                    ?>
+                </p>
+
                 <p><b>Thông số sản phẩm: </b></p>
                     <ul>
                         <?php 
@@ -83,7 +95,6 @@
         </div>
 
         <!-- Sản phẩm liên quan -->
-<!-- Sản phẩm liên quan -->
 <div class="maincontent-area">
     <div class="zigzag-bottom"></div>
     <div class="container">

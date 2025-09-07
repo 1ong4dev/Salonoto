@@ -19,7 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Di chuyển file từ tmp sang thư mục lưu
         if (move_uploaded_file($_FILES['pic']['tmp_name'], $targetPath)) {
-            // Đường dẫn lưu vào DB (đảm bảo đúng link web)
             $image_path = '/Salonoto/assets/img/sanpham/' . $filename;
         } else {
             echo "Upload thất bại!";
@@ -35,10 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $description = $_POST['description'] ?? '';
         $price = $_POST['price'] ?? 0;
         $category = $_POST['category'] ?? '';
+        $warranty = $_POST['warranty'] ?? 0;
 
         if (!empty($name) && $image_path) {
-            $sql = "INSERT INTO SanPham (TenSP, ThongSoSanPham, Gia, HinhAnh, MaLoaiSP, UpdatedAt)
-                    VALUES ('$name','$description',$price,'$image_path','$category',NOW())";
+            $sql = "INSERT INTO SanPham (TenSP, ThongSoSanPham, Gia, HinhAnh, MaLoaiSP, ThoiGianBaoHanh, UpdatedAt)
+                    VALUES ('$name','$description',$price,'$image_path','$category',$warranty,NOW())";
             if (Database::NonQuery($sql)) {
                 $message = ['type'=>'success','text'=>'Thêm sản phẩm thành công'];
             }
@@ -54,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $description = $_POST['description'] ?? '';
         $price = $_POST['price'] ?? 0;
         $category = $_POST['category'] ?? '';
+        $warranty = $_POST['warranty'] ?? 0;
 
         if (!empty($name) && $id) {
             $image_sql = $image_path ? "HinhAnh='$image_path'," : "";
@@ -63,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         Gia=$price,
                         $image_sql
                         MaLoaiSP='$category',
+                        ThoiGianBaoHanh=$warranty,
                         UpdatedAt=NOW()
                     WHERE MaSP=$id";
             if (Database::NonQuery($sql)) {
@@ -85,7 +87,6 @@ if (isset($_GET['del-id'])) {
     }
 }
 ?>
-
 
 <?php include '../sidebar.php'?>
 
@@ -154,6 +155,10 @@ if (isset($_GET['del-id'])) {
                                     ?>
                                 </select>
                             </div>
+                            <div class="col-md-6 form-group">
+                                <label>Thời gian bảo hành (năm)</label>
+                                <input type="number" name="warranty" class="form-control" min="0" value="0">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -219,6 +224,10 @@ if (isset($_GET['del-id'])) {
                                     ?>
                                 </select>
                             </div>
+                            <div class="col-md-6 form-group">
+                                <label>Thời gian bảo hành (năm)</label>
+                                <input type="number" name="warranty" class="form-control" min="0" value="<?=$product['ThoiGianBaoHanh'] ?? 0?>">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -256,6 +265,7 @@ if (isset($_GET['del-id'])) {
                                     <th>Mô tả</th>
                                     <th>Giá</th>
                                     <th>Loại</th>
+                                    <th>Bảo hành (năm)</th>
                                     <th width="160">Công cụ</th>
                                 </tr>
                             </thead>
@@ -285,6 +295,7 @@ if (isset($_GET['del-id'])) {
                                                     <td>' . $sp['ThongSoSanPham'] . '</td>
                                                     <td>' . Helper::Currency($sp['Gia']) . '</td>
                                                     <td>' . $sp['TenLoaiSP'] . '</td>
+                                                    <td>' . ($sp['ThoiGianBaoHanh'] ?? 0) . '</td>
                                                     <td>
                                                         <a href="?edit-id=' . $sp['MaSP'] . '" class="btn btn-warning"><i class="fas fa-marker"></i></a>
                                                         <a onclick="removeRow(' . $sp['MaSP'] . ')" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
