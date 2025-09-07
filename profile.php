@@ -215,9 +215,16 @@ function showOrderDetail(orderId) {
 
     let html = `<p><b>Mã đơn:</b> ${order.MaDonDatHang}</p>`;
     html += `<p><b>Tổng tiền:</b> ${parseFloat(order.TongTien).toLocaleString()} đ</p>`;
+
     html += `<table class="table table-bordered">
                 <thead>
-                    <tr><th>Sản phẩm</th><th>Số lượng</th><th>Giá</th></tr>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Số lượng</th>
+                        <th>Giá</th>
+                        <th>Mã Giảm Giá</th>
+                        <th>Giảm Giá</th>
+                    </tr>
                 </thead>
                 <tbody>`;
     order.ChiTiet.forEach(item => {
@@ -225,13 +232,27 @@ function showOrderDetail(orderId) {
                     <td>${item.TenSP}</td>
                     <td>${item.SL}</td>
                     <td>${parseFloat(item.Gia).toLocaleString()} đ</td>
+                    <td></td>
+                    <td></td>
                  </tr>`;
     });
+
+    // thêm dòng hiển thị mã giảm giá
+    if (order.MaGiamGia) {
+        html += `<tr>
+                    <td colspan="3" class="text-end"><b>Khuyến mãi</b></td>
+                    <td>${order.MaGiamGia}</td>
+                    <td>- ${parseFloat(order.GiamGia).toLocaleString()} đ</td>
+                 </tr>`;
+    }
+
     html += `</tbody></table>`;
 
     document.getElementById('order-detail-body').innerHTML = html;
     $('#modal-order-detail').modal('show');
 }
+
+
 </script>
 
 </body>

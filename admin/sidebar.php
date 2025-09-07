@@ -91,6 +91,12 @@
                         <p>Đơn hàng</p>
                     </a>
                 </li>
+                   <li class="nav-item">
+                    <a href="../khuyenmai/list.php" class="nav-link">
+                        <i class="nav-icon fas fa-tags "></i>
+                        <p>Khuyến Mãi</p>
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a href="../users/list.php" class="nav-link">
                         <i class="nav-icon fas fa-user-circle"></i>
