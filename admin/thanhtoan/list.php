@@ -83,76 +83,81 @@ function PaymentBadgeTT($status) {
                 </form>
             </div>
 
-            <!-- Bảng thanh toán -->
-            <div class="row my-2">
-                <div class="card w-100">
-                    <div class="card-body">
-                        <table class="table table-hover table-bordered">
-                            <thead class="table-warning">
-                                <tr>
-                                    <th>Mã TT</th>
-                                    <th>Giao dịch</th>
-                                    <th>Người dùng</th>
-                                    <th>Tổng tiền</th>
-                                    <th>Phương thức TT</th>
-                                    <th>Trạng thái</th>
-                                    <th>Ngày TT</th>
-                                    <th>Ngày cập nhật</th>
-                                    <th>Ghi chú</th>
-                                    <th>Công cụ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                $page = isset($_GET['page']) ? $_GET['page'] : 1;
-                                $pager = (new Pagination())->get('thanhtoan', $page, ROW_OF_PAGE);
+          <!-- Bảng thanh toán -->
+<div class="row my-2">
+    <div class="card w-100">
+        <div class="card-body">
+            <table class="table table-hover table-bordered">
+                <thead class="table-warning">
+                    <tr>
+                        <th>Mã TT</th>
+                        <th>Giao dịch</th>
+                        <th>Người dùng</th>
+                        <th>Tổng tiền</th>
+                        <th>Mã giảm giá</th>
+                        <th>Giảm giá</th>
+                        <th>Phương thức TT</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày TT</th>
+                        <th>Ngày cập nhật</th>
+                        <th>Ghi chú</th>
+                        <th>Công cụ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $page = isset($_GET['page']) ? $_GET['page'] : 1;
+                    $pager = (new Pagination())->get('thanhtoan', $page, ROW_OF_PAGE);
 
-                                $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : '';
-                                $where = '';
-                                if ($keyword) {
-                                    $where = "WHERE t.MaGiaoDich LIKE '%$keyword%' OR t.TenTaiKhoan LIKE '%$keyword%'";
-                                }
+                    $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : '';
+                    $where = '';
+                    if ($keyword) {
+                        $where = "WHERE t.MaGiaoDich LIKE '%$keyword%' OR t.TenTaiKhoan LIKE '%$keyword%'";
+                    }
 
-                                $sql = "
-                                    SELECT t.*, u.TenDayDu
-                                    FROM thanhtoan t
-                                    JOIN users u ON t.TenTaiKhoan = u.TenTaiKhoan
-                                    $where
-                                    ORDER BY t.NgayTT DESC
-                                    LIMIT " . $pager['StartIndex'] . ", " . ROW_OF_PAGE;
-                                
-                                $payments = Database::GetData($sql);
+                    $sql = "
+                        SELECT t.*, u.TenDayDu
+                        FROM thanhtoan t
+                        JOIN users u ON t.TenTaiKhoan = u.TenTaiKhoan
+                        $where
+                        ORDER BY t.NgayTT DESC
+                        LIMIT " . $pager['StartIndex'] . ", " . ROW_OF_PAGE;
+                    
+                    $payments = Database::GetData($sql);
 
-                                if ($payments) {
-                                    foreach ($payments as $payment) {
-                                        echo '<tr>
-                                            <td>' . $payment['MaTT'] . '</td>
-                                            <td>' . $payment['MaGiaoDich'] . '</td>
-                                            <td>' . $payment['TenDayDu'] . '</td>
-                                            <td>' . Helper::Currency($payment['TongTien']) . '</td>
-                                            <td>' . $payment['PhuongThucTT'] . '</td>
-                                            <td>' . PaymentBadgeTT($payment['TrangThaiTT']) . '</td>
-                                            <td>' . Helper::DateTime($payment['NgayTT']) . '</td>
-                                            <td>' . Helper::DateTime($payment['UpdatedAt']) . '</td>
-                                            <td>' . $payment['GhiChu'] . '</td>
-                                            <td>';
-                                        if ($payment['TrangThaiTT'] == 'ChoXuLy') {
-                                            echo '<a href="?action=confirm&MaGiaoDich=' . $payment['MaGiaoDich'] . '" class="btn btn-success btn-sm"><i class="fas fa-check"></i></a> ';
-                                            echo '<a href="?action=cancel&MaGiaoDich=' . $payment['MaGiaoDich'] . '" class="btn btn-danger btn-sm"><i class="fas fa-times"></i></a>';
-                                        } else {
-                                            echo '<span class="text-muted">Đã xử lý</span>';
-                                        }
-                                        echo '</td></tr>';
-                                    }
-                                } else {
-                                    echo '<tr><td colspan="100%" class="text-center">Không có dữ liệu</td></tr>';
-                                }
-                                ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+                    if ($payments) {
+                        foreach ($payments as $payment) {
+                            echo '<tr>
+                                <td>' . $payment['MaTT'] . '</td>
+                                <td>' . $payment['MaGiaoDich'] . '</td>
+                                <td>' . $payment['TenDayDu'] . '</td>
+                                <td>' . Helper::Currency($payment['TongTien']) . '</td>
+                                <td>' . ($payment['MaGiamGia'] ?? '-') . '</td>
+                                <td>' . ($payment['GiamGia'] ? Helper::Currency($payment['GiamGia']) : '0 đ') . '</td>
+                                <td>' . $payment['PhuongThucTT'] . '</td>
+                                <td>' . PaymentBadgeTT($payment['TrangThaiTT']) . '</td>
+                                <td>' . Helper::DateTime($payment['NgayTT']) . '</td>
+                                <td>' . Helper::DateTime($payment['UpdatedAt']) . '</td>
+                                <td>' . $payment['GhiChu'] . '</td>
+                                <td>';
+                            if ($payment['TrangThaiTT'] == 'ChoXuLy') {
+                                echo '<a href="?action=confirm&MaGiaoDich=' . $payment['MaGiaoDich'] . '" class="btn btn-success btn-sm"><i class="fas fa-check"></i></a> ';
+                                echo '<a href="?action=cancel&MaGiaoDich=' . $payment['MaGiaoDich'] . '" class="btn btn-danger btn-sm"><i class="fas fa-times"></i></a>';
+                            } else {
+                                echo '<span class="text-muted">Đã xử lý</span>';
+                            }
+                            echo '</td></tr>';
+                        }
+                    } else {
+                        echo '<tr><td colspan="100%" class="text-center">Không có dữ liệu</td></tr>';
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 
             <!-- Phân trang -->
             <div class="row my-2 d-flex-between">
