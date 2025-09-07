@@ -22,20 +22,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $NgayHen  = $_POST['NgayHen'];
     $GhiChu   = addslashes($_POST['GhiChu']);
 
-    // Lưu thông tin vào bảng DatDichVu (chỉ TenTaiKhoan và thông tin dịch vụ)
-    $sql = "INSERT INTO DatDichVu (TenTaiKhoan, MaDichVu, DongXe, BienSoXe, NgayHen, GhiChu) 
-            VALUES ('$username', $MaDichVu, '$DongXe', '$BienSoXe', '$NgayHen', '$GhiChu')";
+    // --- Kiểm tra ngày hẹn ---
+    $ngayHenDate = strtotime($NgayHen);
+    $tomorrow    = strtotime('tomorrow');
 
-    if (Database::NonQuery($sql)) {
-        echo "<script>alert('Đặt lịch thành công!'); window.location='index.php';</script>";
-        exit;
+    if ($ngayHenDate < $tomorrow) {
+        echo "<script>alert('Thời gian hẹn phải ít nhất sau hôm nay 1 ngày!');</script>";
     } else {
-        echo "<script>alert('Lỗi khi đặt lịch!');</script>";
+        // Lưu thông tin vào bảng DatDichVu
+        $sql = "INSERT INTO DatDichVu (TenTaiKhoan, MaDichVu, DongXe, BienSoXe, NgayHen, GhiChu) 
+                VALUES ('$username', $MaDichVu, '$DongXe', '$BienSoXe', '$NgayHen', '$GhiChu')";
+
+        if (Database::NonQuery($sql)) {
+            echo "<script>alert('Đặt lịch thành công!'); window.location='index.php';</script>";
+            exit;
+        } else {
+            echo "<script>alert('Lỗi khi đặt lịch!');</script>";
+        }
     }
 }
 
 // Lấy danh sách dịch vụ
 $result_dv = Database::GetData("SELECT MaDichVu, TenDichVu FROM DichVu");
+
+// Ngày mai để set min cho input datetime-local
+$tomorrowMin = date('Y-m-d\T00:00', strtotime('+1 day'));
 ?>
 
 <style>
@@ -106,7 +117,8 @@ body { font-family: Arial, Helvetica, sans-serif; }
 
                 <div class="form-group">
                     <label>Thời gian hẹn:</label>
-                    <input type="datetime-local" name="NgayHen" class="form-control" required>
+                    <!-- chỉ thêm min, không đổi thẻ -->
+                    <input type="datetime-local" name="NgayHen" class="form-control" required min="<?=$tomorrowMin?>">
                 </div>
 
                 <div class="form-group">
@@ -121,5 +133,21 @@ body { font-family: Arial, Helvetica, sans-serif; }
         </div>
     </div>
 </div>
+
+<!-- Thêm validate JS -->
+<script>
+document.querySelector('form.booking-form').addEventListener('submit', function(e) {
+    const input = document.querySelector('input[name="NgayHen"]');
+    const selected = new Date(input.value);
+    const tomorrow = new Date();
+    tomorrow.setHours(0,0,0,0);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (selected < tomorrow) {
+        e.preventDefault();
+        alert("Bạn phải đặt lịch ít nhất sau hôm nay 1 ngày!");
+    }
+});
+</script>
 
 <?php include 'footer.php'; ?>

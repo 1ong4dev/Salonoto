@@ -9,49 +9,66 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Thêm phiếu nhập
     if (isset($_POST['action']) && $_POST['action'] == 'add') {
-        $MaSP  = $_POST['MaSP'] ?? '';
-        $SL    = $_POST['SL'] ?? 0;
-        $MaNCC = $_POST['MaNCC'] ?? '';
+        $MaSP    = $_POST['MaSP'] ?? '';
+        $SL      = (int) ($_POST['SL'] ?? 0);
+        $MaNCC   = $_POST['MaNCC'] ?? '';
+        $GiaNhap = (float) ($_POST['GiaNhap'] ?? 0);
 
-        if ($MaSP && $SL > 0 && $MaNCC) {
-            Database::NonQuery("INSERT INTO NhapHang (MaSP, SL, MaNCC) VALUES ($MaSP, $SL, $MaNCC)");
+        if ($MaSP && $SL > 0 && $MaNCC && $GiaNhap > 0) {
+            // Lấy giá bán từ bảng SanPham
+            $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
+            if ($GiaNhap < $giaBan * 0.9) {
+                // Insert phiếu nhập
+                Database::NonQuery("INSERT INTO NhapHang (MaSP, SL, GiaNhap, MaNCC) 
+                                    VALUES ($MaSP, $SL, $GiaNhap, $MaNCC)");
 
-            // Cập nhật kho
-            $exist = Database::GetData("SELECT * FROM Kho WHERE MaSP=$MaSP", ['row'=>0]);
-            if ($exist) {
-                Database::NonQuery("UPDATE Kho SET SLTon = SLTon + $SL WHERE MaSP=$MaSP");
+                // Cập nhật kho
+                $exist = Database::GetData("SELECT * FROM Kho WHERE MaSP=$MaSP", ['row'=>0]);
+                if ($exist) {
+                    Database::NonQuery("UPDATE Kho SET SLTon = SLTon + $SL WHERE MaSP=$MaSP");
+                } else {
+                    Database::NonQuery("INSERT INTO Kho (MaSP, SLTon) VALUES ($MaSP, $SL)");
+                }
+
+                $message = ['type'=>'success','text'=>'Nhập hàng thành công!'];
             } else {
-                Database::NonQuery("INSERT INTO Kho (MaSP, SLTon) VALUES ($MaSP, $SL)");
+                $message = ['type'=>'warning','text'=>'Giá nhập phải nhỏ hơn giá bán ít nhất 10%!'];
             }
-
-            $message = ['type'=>'success','text'=>'Nhập hàng thành công!'];
         } else {
-            $message = ['type'=>'warning','text'=>'Vui lòng chọn sản phẩm, nhà cung cấp và nhập số lượng hợp lệ!'];
+            $message = ['type'=>'warning','text'=>'Vui lòng nhập đầy đủ thông tin hợp lệ!'];
         }
     }
 
     // Sửa phiếu nhập
     if (isset($_POST['action']) && $_POST['action'] == 'edit') {
-        $id    = $_POST['edit_id'] ?? '';
-        $MaSP  = $_POST['MaSP'] ?? '';
-        $SL    = $_POST['SL'] ?? 0;
-        $MaNCC = $_POST['MaNCC'] ?? '';
+        $id      = $_POST['edit_id'] ?? '';
+        $MaSP    = $_POST['MaSP'] ?? '';
+        $SL      = (int) ($_POST['SL'] ?? 0);
+        $MaNCC   = $_POST['MaNCC'] ?? '';
+        $GiaNhap = (float) ($_POST['GiaNhap'] ?? 0);
 
-        if ($id && $MaSP && $SL > 0 && $MaNCC) {
-            // Lấy SL cũ để cập nhật kho
-            $old = Database::GetData("SELECT SL, MaSP FROM NhapHang WHERE MaNhap=$id", ['row'=>0]);
-            if ($old) {
-                $delta = $SL - $old['SL'];
-                Database::NonQuery("UPDATE Kho SET SLTon = SLTon + $delta WHERE MaSP={$old['MaSP']}");
+        if ($id && $MaSP && $SL > 0 && $MaNCC && $GiaNhap > 0) {
+            $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
+            if ($GiaNhap < $giaBan * 0.9) {
+                // Lấy SL cũ
+                $old = Database::GetData("SELECT SL, MaSP FROM NhapHang WHERE MaNhap=$id", ['row'=>0]);
+                if ($old) {
+                    $delta = $SL - $old['SL'];
+                    Database::NonQuery("UPDATE Kho SET SLTon = SLTon + $delta WHERE MaSP={$old['MaSP']}");
+                }
+
+                Database::NonQuery("UPDATE NhapHang 
+                                    SET MaSP=$MaSP, SL=$SL, GiaNhap=$GiaNhap, MaNCC=$MaNCC 
+                                    WHERE MaNhap=$id");
+                $message = ['type'=>'success','text'=>'Cập nhật phiếu nhập thành công!'];
+            } else {
+                $message = ['type'=>'warning','text'=>'Giá nhập phải nhỏ hơn giá bán ít nhất 10%!'];
             }
-
-            Database::NonQuery("UPDATE NhapHang SET MaSP=$MaSP, SL=$SL, MaNCC=$MaNCC WHERE MaNhap=$id");
-            $message = ['type'=>'success','text'=>'Cập nhật phiếu nhập thành công!'];
         } else {
             $message = ['type'=>'warning','text'=>'Vui lòng nhập đầy đủ thông tin hợp lệ!'];
         }
     }
-}
+} // ✅ đóng if ($_SERVER['REQUEST_METHOD'] == 'POST')
 
 // Xóa phiếu nhập
 if (isset($_GET['del-id'])) {
@@ -120,6 +137,10 @@ if (isset($_GET['del-id'])) {
                             <label>Số lượng</label>
                             <input type="number" name="SL" class="form-control" min="1" required>
                         </div>
+                        <div class="form-group">
+                            <label>Giá nhập</label>
+                            <input type="number" step="0.01" name="GiaNhap" class="form-control" min="1" required>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-danger" data-dismiss="modal">Huỷ</button>
@@ -161,6 +182,10 @@ if (isset($_GET['del-id'])) {
                             <label>Số lượng</label>
                             <input type="number" name="SL" id="edit_SL" class="form-control" min="1" required>
                         </div>
+                        <div class="form-group">
+                            <label>Giá nhập</label>
+                            <input type="number" step="0.01" name="GiaNhap" id="edit_GiaNhap" class="form-control" min="1" required>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-danger" data-dismiss="modal">Huỷ</button>
@@ -196,45 +221,51 @@ if (isset($_GET['del-id'])) {
                                     <th>Sản phẩm</th>
                                     <th>Nhà cung cấp</th>
                                     <th>Số lượng</th>
+                                    <th>Giá nhập</th>
+                                    <th>Tổng tiền</th>
                                     <th>Ngày nhập</th>
                                     <th width="111">Công cụ</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php
-                                $page = $_GET['page'] ?? 1;
-                                $keyword = $_GET['keyword'] ?? '';
-                                $where = $keyword ? "WHERE sp.TenSP LIKE '%$keyword%' OR nc.TenNCC LIKE '%$keyword%'" : '';
+                            <?php
+                            $where = '';
+                            if (!empty($_GET['keyword'])) {
+                                $kw = addslashes($_GET['keyword']);
+                                $where = "WHERE sp.TenSP LIKE '%$kw%' OR nc.TenNCC LIKE '%$kw%'";
+                            }
 
-                                $sqlNhap = "SELECT n.MaNhap, n.MaSP, n.MaNCC, sp.TenSP, nc.TenNCC, n.SL, n.TGNhap
+                            $sqlNhap = "SELECT n.MaNhap, n.MaSP, n.MaNCC, sp.TenSP, nc.TenNCC, 
+                                               n.SL, n.GiaNhap, (n.SL*n.GiaNhap) AS TongTien, n.TGNhap
                                         FROM NhapHang n
                                         JOIN SanPham sp ON n.MaSP = sp.MaSP
                                         JOIN NhaCungCap nc ON n.MaNCC = nc.MaNCC
                                         $where
                                         ORDER BY n.TGNhap DESC";
 
-                                $nhapHang = Database::GetData($sqlNhap);
+                            $nhapHang = Database::GetData($sqlNhap);
 
-                                if ($nhapHang) {
-                                    foreach($nhapHang as $nh) {
-                                        echo '<tr>
-                                            <td>'.$nh['MaNhap'].'</td>
-                                            <td>'.$nh['TenSP'].'</td>
-                                            <td>'.$nh['TenNCC'].'</td>
-                                            <td>'.$nh['SL'].'</td>
-                                            <td>'.$nh['TGNhap'].'</td>
-                                            <td>
-                                                <button class="btn btn-warning" onclick="editRow('.$nh['MaNhap'].',\''.$nh['MaSP'].'\',\''.$nh['MaNCC'].'\',\''.$nh['SL'].'\')">
-                                                    <i class="fas fa-marker"></i>
-                                                </button>
-                                                <a onclick="removeRow('.$nh['MaNhap'].')" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
-                                            </td>
-                                        </tr>';
-                                    }
-                                } else {
-                                    echo '<tr><td colspan="6" class="text-center">Không có dữ liệu</td></tr>';
+                            if ($nhapHang) {
+                                foreach($nhapHang as $nh) {
+                                    echo '<tr>
+                                        <td>'.$nh['MaNhap'].'</td>
+                                        <td>'.$nh['TenSP'].'</td>
+                                        <td>'.$nh['TenNCC'].'</td>
+                                        <td>'.$nh['SL'].'</td>
+                                        <td>'.Helper::Currency($nh['GiaNhap']).'</td>
+                                        <td>'.Helper::Currency($nh['TongTien']).'</td>
+                                        <td>'.$nh['TGNhap'].'</td>
+                                        <td>
+                                            <button class="btn btn-warning" 
+                                                onclick="editRow('.$nh['MaNhap'].',\''.$nh['MaSP'].'\',\''.$nh['MaNCC'].'\',\''.$nh['SL'].'\',\''.$nh['GiaNhap'].'\')">
+                                                <i class="fas fa-marker"></i>
+                                            </button>
+                                            <a onclick="removeRow('.$nh['MaNhap'].')" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
+                                        </td>
+                                    </tr>';
                                 }
-                                ?>
+                            }
+                            ?>
                             </tbody>
                         </table>
                     </div>
@@ -254,11 +285,12 @@ function removeRow(id) {
     }
 }
 
-function editRow(id, MaSP, MaNCC, SL) {
+function editRow(id, MaSP, MaNCC, SL, GiaNhap) {
     document.getElementById('edit_id').value = id;
     document.getElementById('edit_MaSP').value = MaSP;
     document.getElementById('edit_MaNCC').value = MaNCC;
     document.getElementById('edit_SL').value = SL;
+    document.getElementById('edit_GiaNhap').value = GiaNhap;
     $('#modal-edit').modal('show');
 }
 </script>
