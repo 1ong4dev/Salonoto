@@ -126,13 +126,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <i class="fas fa-lock"></i>
                         <input name="password2" type="password" placeholder="Nhập lại mật khẩu" required />
                     </div>
-                    <div class="input-field">
+                   <div class="input-field">
                         <i class="fas fa-phone"></i>
-                        <input name="phone" type="text" placeholder="Số điện thoại" required />
+                        <input 
+                            name="phone" 
+                            type="text" 
+                            placeholder="Số điện thoại" 
+                            required 
+                            pattern="^0\d{10}$" 
+                            title="Số điện thoại phải gồm 11 số, bắt đầu bằng 0, không có chữ"/>
                     </div>
-                    <div class="input-field">
+                   <div class="input-field">
                         <i class="fas fa-envelope"></i>
-                        <input name="email" type="email" placeholder="Email" required />
+                        <input 
+                            name="email" 
+                            type="email" 
+                            placeholder="Email" 
+                            required 
+                            pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                            title="Email phải đúng định dạng (vd: abc@gmail.com)" 
+                        />
                     </div>
                     <div class="input-field">
                         <i class="fas fa-map-marker-alt"></i>
