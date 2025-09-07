@@ -117,7 +117,7 @@
                 </li>
                 <li class="nav-item">
                     <a href="../baocao/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-images"></i>
+                        <i class="nav-icon fas fa-chart-line"></i>
                         <p>Báo Cáo Thống Kê</p>
                     </a>
                 </li>
