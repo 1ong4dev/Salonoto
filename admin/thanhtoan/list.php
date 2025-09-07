@@ -83,7 +83,7 @@ function PaymentBadgeTT($status) {
                 </form>
             </div>
 
-          <!-- Bảng thanh toán -->
+          <!-- Bảng thanh toán 123 -->
 <div class="row my-2">
     <div class="card w-100">
         <div class="card-body">

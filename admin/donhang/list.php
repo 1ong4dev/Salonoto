@@ -27,7 +27,7 @@ if (isset($_GET['return']) && isset($_GET['MaDonDatHang'])) {
     }
 }
 
-// Hàm hiển thị badge trạng thái
+// Hàm hiển thị badge trạng thái 123
 function OrderStatusBadge($status) {
     switch ($status) {
         case 'ChoXuLy':

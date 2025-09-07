@@ -244,7 +244,7 @@ $(document).ready(function() {
         document.querySelector("[data-target='#modal-edit']").click();
     }
 
-    // validate % không quá 100 khi nhập
+    // validate % không quá 100 khi nhập 
     $('input[name="value"]').on('input', function(){
         const type = $(this).closest('form').find('select[name="type"]').val();
         if(type === 'PERCENT' && $(this).val() > 100){

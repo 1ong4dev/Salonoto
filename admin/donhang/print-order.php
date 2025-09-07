@@ -96,7 +96,7 @@ $payer = Database::GetData($sql, ['row' => 0]);
                     </tbody>
                 </table>
 
-                <!-- Mã giảm giá & Giảm giá bên ngoài bảng -->
+                <!-- Mã giảm giá & Giảm giá bên ngoài bảng 123 -->
                 <div class="mb-3 text-end">
                     <p><b>Mã giảm giá:</b> <?= !empty($orderUser['MaGiamGia']) ? $orderUser['MaGiamGia'] : '-' ?></p>
                     <p><b>Giảm giá:</b> <?= !empty($orderUser['GiamGia']) ? Helper::Currency($orderUser['GiamGia']) : '0 ₫' ?></p>
