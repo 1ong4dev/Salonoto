@@ -62,48 +62,54 @@ $payer = Database::GetData($sql, ['row' => 0]);
         <p><b>Ngày lập:</b> <?= $orderUser['CreatedAt'] ? Helper::DateTime($orderUser['CreatedAt'], true) : '-' ?></p>
     </div>
 
-    <!-- Chi tiết đơn hàng -->
-    <div class="pb-5">
-        <h5 class="text-primary"><b>CHI TIẾT ĐƠN HÀNG</b></h5>
-        <table class="table table-hover table-bordered">
-            <thead class="table-success">
-                <tr>
-                    <th>Mã Sản phẩm</th>
-                    <th>Tên Sản phẩm</th>
-                    <th>Giá</th>
-                    <th>Số lượng</th>
-                    <th>Thành tiền</th>
-                    <th>Ngày bắt đầu BH</th>
-                    <th>Ngày kết thúc BH</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($items): ?>
-                    <?php foreach ($items as $item): ?>
+            <!-- Chi tiết đơn hàng -->
+            <div class="pb-5">
+                <h5 class="text-primary"><b>CHI TIẾT ĐƠN HÀNG</b></h5>
+                <table class="table table-hover table-bordered">
+                    <thead class="table-success">
                         <tr>
-                            <th><?= $item['MaSP'] ?></th>
-                            <td><?= $item['TenSP'] ?></td>
-                            <td><?= Helper::Currency($item['Gia']) ?></td>
-                            <td><?= $item['SL'] ?></td>
-                            <td><?= Helper::Currency($item['Gia'] * $item['SL']) ?></td>
-                            <td><?= $item['NgayBatDauBH'] ? Helper::DateTime($item['NgayBatDauBH'], true) : '-' ?></td>
-                            <td><?= $item['NgayKetThucBH'] ? Helper::DateTime($item['NgayKetThucBH'], true) : '-' ?></td>
+                            <th>Mã Sản phẩm</th>
+                            <th>Tên Sản phẩm</th>
+                            <th>Giá</th>
+                            <th>Số lượng</th>
+                            <th>Thành tiền</th>
+                            <th>Ngày bắt đầu BH</th>
+                            <th>Ngày kết thúc BH</th>
                         </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr><td colspan="100%" class="text-center">Không có dữ liệu</td></tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                    </thead>
+                    <tbody>
+                        <?php if ($items): ?>
+                            <?php foreach ($items as $item): ?>
+                                <tr>
+                                    <th><?= $item['MaSP'] ?></th>
+                                    <td><?= $item['TenSP'] ?></td>
+                                    <td><?= Helper::Currency($item['Gia']) ?></td>
+                                    <td><?= $item['SL'] ?></td>
+                                    <td><?= Helper::Currency($item['Gia'] * $item['SL']) ?></td>
+                                    <td><?= $item['NgayBatDauBH'] ? Helper::DateTime($item['NgayBatDauBH'], true) : '-' ?></td>
+                                    <td><?= $item['NgayKetThucBH'] ? Helper::DateTime($item['NgayKetThucBH'], true) : '-' ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr><td colspan="100%" class="text-center">Không có dữ liệu</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
 
-        <div class="text-end">
-            <p><b>Tổng tiền:</b> <?= Helper::Currency($orderUser['TongTien']) ?></p>
-            <p><b>Phí vận chuyển:</b> 0 ₫</p>
-            <?php if ($orderUser['TrangThai'] == 'DaHoanThanh'): ?>
-                <img style="height: 150px;" src="<?='/Salonoto/assets/img/paid-logo.jpg'?>">
-            <?php endif; ?>
-        </div>
-    </div>
+                <!-- Mã giảm giá & Giảm giá bên ngoài bảng -->
+                <div class="mb-3 text-end">
+                    <p><b>Mã giảm giá:</b> <?= !empty($orderUser['MaGiamGia']) ? $orderUser['MaGiamGia'] : '-' ?></p>
+                    <p><b>Giảm giá:</b> <?= !empty($orderUser['GiamGia']) ? Helper::Currency($orderUser['GiamGia']) : '0 ₫' ?></p>
+                </div>
+
+                <div class="text-end">
+                    <p><b>Tổng tiền:</b> <?= Helper::Currency($orderUser['TongTien']) ?></p>
+                    <p><b>Phí vận chuyển:</b> 0 ₫</p>
+                    <?php if ($orderUser['TrangThai'] == 'DaHoanThanh'): ?>
+                        <img style="height: 150px;" src="<?='/Salonoto/assets/img/paid-logo.jpg'?>">
+                    <?php endif; ?>
+                </div>
+            </div>
 
     <div class="text-center mb-5">
         <button onclick="window.print();" class="btn btn-primary btn-lg">
