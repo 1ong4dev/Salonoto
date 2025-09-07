@@ -2,12 +2,13 @@
 
 <?php
 // Lấy danh sách sản phẩm, số lượng tồn và nhà cung cấp
-$sql = "SELECT sp.MaSP, sp.TenSP, k.SLTon, nc.TenNCC
+$sql = "SELECT sp.MaSP, sp.TenSP, k.SLTon, 
+       GROUP_CONCAT(DISTINCT nc.TenNCC SEPARATOR ', ') AS NhaCungCap
         FROM SanPham sp
         LEFT JOIN Kho k ON sp.MaSP = k.MaSP
         LEFT JOIN NhapHang nh ON sp.MaSP = nh.MaSP
         LEFT JOIN NhaCungCap nc ON nh.MaNCC = nc.MaNCC
-        GROUP BY sp.MaSP
+        GROUP BY sp.MaSP, sp.TenSP, k.SLTon
         ORDER BY sp.TenSP ASC";
 $products = Database::GetData($sql);
 
@@ -46,7 +47,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 1;
                                                 <td>{$sp['MaSP']}</td>
                                                 <td>{$sp['TenSP']}</td>
                                                 <td>{$sp['SLTon']}</td>
-                                                <td>{$sp['TenNCC']}</td>
+                                                <td>{$sp['NhaCungCap']}</td>
                                               </tr>";
                                     }
                                 } else {
