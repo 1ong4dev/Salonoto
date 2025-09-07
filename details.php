@@ -1,14 +1,14 @@
-<?php include 'header.php'?>
-<?php
-    $maSP = isset($_GET['id']) ? $_GET['id'] : '';
+<?php 
+include 'header.php';
+$maSP = isset($_GET['id']) ? $_GET['id'] : '';
 
-    // Lấy thông tin sản phẩm kèm loại và tồn kho
-    $sql = "SELECT sp.*, lsp.TenLoaiSP, k.SLTon 
-            FROM SanPham sp 
-            LEFT JOIN LoaiSP lsp ON sp.MaLoaiSP = lsp.MaLoaiSP 
-            LEFT JOIN kho k ON sp.MaSP = k.MaSP
-            WHERE sp.MaSP = '$maSP'";
-    $sanPham = Database::GetData($sql, ['row' => 0]);
+// Lấy thông tin sản phẩm kèm loại và tồn kho
+$sql = "SELECT sp.*, lsp.TenLoaiSP, k.SLTon 
+        FROM SanPham sp 
+        LEFT JOIN LoaiSP lsp ON sp.MaLoaiSP = lsp.MaLoaiSP 
+        LEFT JOIN kho k ON sp.MaSP = k.MaSP
+        WHERE sp.MaSP = '$maSP'";
+$sanPham = Database::GetData($sql, ['row' => 0]);
 ?>
 <div class="single-product-area">
     <div class="zigzag-bottom"></div>
@@ -55,12 +55,29 @@
                     </ul>
 
                 <?php if(isset($sanPham['SLTon']) && $sanPham['SLTon'] > 0): ?>
-                    <form method="POST" action="cart.php">
-                        <input type="hidden" name="MaSP" value="<?=$sanPham['MaSP']?>">
-                        <label>Số lượng: </label>
-                        <input type="number" name="SL" value="1" min="1" max="<?=$sanPham['SLTon']?>">
-                        <button type="submit" class="btn btn-primary">Thêm vào giỏ hàng</button>
-                    </form>
+                    
+                    <?php if(isset($_SESSION['user_id'])): // Đã đăng nhập ?>
+                        <form method="POST" action="cart.php">
+                            <input type="hidden" name="MaSP" value="<?=$sanPham['MaSP']?>">
+                            <label>Số lượng: </label>
+                            <input type="number" name="SL" value="1" min="1" max="<?=$sanPham['SLTon']?>">
+                            <button type="submit" class="btn btn-primary">Thêm vào giỏ hàng</button>
+                        </form>
+                    <?php else: // Chưa đăng nhập ?>
+                        <form onsubmit="return checkLogin()">
+                            <label>Số lượng: </label>
+                            <input type="number" value="1" min="1" max="<?=$sanPham['SLTon']?>">
+                            <button type="submit" class="btn btn-primary">Thêm vào giỏ hàng</button>
+                        </form>
+                        <script>
+                            function checkLogin() {
+                                alert("Bạn cần đăng nhập để mua hàng!");
+                                window.location.href = "sign.php";
+                                return false;
+                            }
+                        </script>
+                    <?php endif; ?>
+
                 <?php endif; ?>
             </div>
         </div>
