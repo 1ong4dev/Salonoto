@@ -4,11 +4,15 @@
     <div class="container">
         <div class="row">
             <?php
-                $keyword = isset($_GET['keyword']) ? "WHERE TenSP LIKE '%" . $_GET['keyword'] . "%'" : '';
-                $sql = "SELECT * FROM SanPham $keyword ORDER BY UpdatedAt";
+                $keyword = isset($_GET['keyword']) ? "WHERE sp.TenSP LIKE '%" . $_GET['keyword'] . "%'" : '';
+                $sql = "SELECT sp.*, k.SLTon 
+                        FROM SanPham sp 
+                        LEFT JOIN kho k ON sp.MaSP = k.MaSP
+                        $keyword 
+                        ORDER BY sp.UpdatedAt";
                 $SanPham = Database::GetData($sql);
                 foreach ($SanPham as $sp) {
-                ?>
+            ?>
             <div class="col-md-3 col-sm-6">
                 <div class="single-shop-product">
                     <div class="product-upper">
@@ -20,15 +24,32 @@
                     </div>
 
                     <div class="product-option-shop">
-                        <?php if (isset($_SESSION['MaQuyen']) && $_SESSION['MaQuyen'] == 3) {?>
-                        <a class="add_to_cart_button" href="<?='/Salonoto/cart.php?id=' . $sp['MaSP']?>"><i class="fas fa-cart-plus"></i></a>
-                        <?php }?>
+                        <?php if (isset($_SESSION['MaQuyen']) && $_SESSION['MaQuyen'] == 3) { ?>
+                            <a class="add_to_cart_button" href="#" 
+                               onclick="return addToCart('<?=$sp['MaSP']?>', '<?=isset($sp['SLTon']) ? $sp['SLTon'] : 0?>')">
+                               <i class="fas fa-cart-plus"></i>
+                            </a>
+                        <?php } ?>
                         <a class="add_to_cart_button" href="<?='/Salonoto/details.php?id=' . $sp['MaSP']?>">Chi tiết</a>
                     </div>
                 </div>
             </div>
-            <?php }?>
+            <?php } ?>
         </div>
     </div>
 </div>
+
+<script>
+function addToCart(maSP, slTon) {
+    if (!slTon || slTon <= 0) {
+        alert("Sản phẩm này đã hết hàng!");
+        return false;
+    } else {
+        alert("Thêm vào giỏ hàng thành công!");
+        window.location.href = "/Salonoto/cart.php?id=" + maSP;
+        return false;
+    }
+}
+</script>
+
 <?php include 'footer.php'?>
