@@ -6,8 +6,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['TenTaiKhoan'])) {
+    echo "<script>alert('Bạn cần đăng nhập trước khi đặt lịch!'); window.location='sign.php';</script>";
+    exit;
+}
+
 // Lấy username từ session
-$username = isset($_SESSION['TenTaiKhoan']) ? $_SESSION['TenTaiKhoan'] : '';
+$username = $_SESSION['TenTaiKhoan'];
+
 
 // Lấy thông tin người dùng (Họ tên và SDT) từ bảng users
 $userInfo = Database::GetData("SELECT TenDayDu, SDT FROM users WHERE TenTaiKhoan='$username'", ['row'=>0]);
