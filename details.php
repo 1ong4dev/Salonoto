@@ -120,11 +120,22 @@
                             <div class="product-f-image">
                                 <img src="<?=$sp['HinhAnh']?>" alt="<?=$sp['TenSP']?>">
                                 <div class="product-hover">
-                                    <?php if (isset($_SESSION['MaQuyen']) && $_SESSION['MaQuyen'] == 3) { ?>
-                                        <a href="<?='/Salonoto/cart.php?id=' . $sp['MaSP']?>" class="add-to-cart-link">
-                                            <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
-                                        </a>
-                                    <?php } ?>
+                                    <?php 
+                                        if (isset($_SESSION['MaQuyen']) && $_SESSION['MaQuyen'] == 3) { 
+                                            // Lấy tồn kho hiện tại của sản phẩm
+                                            $sqlStock = "SELECT SLTon FROM Kho WHERE MaSP = '" . $sp['MaSP'] . "'";
+                                            $SLTon = Database::GetData($sqlStock, ['cell' => 'SLTon']);
+
+                                            // Chỉ hiện nút Thêm vào giỏ nếu còn tồn kho > 0
+                                            if ($SLTon && $SLTon > 0) { 
+                                    ?>
+                                                <a href="/Salonoto/cart.php?id=<?= $sp['MaSP'] ?>" class="add-to-cart-link">
+                                                    <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
+                                                </a>
+                                    <?php 
+                                            } 
+                                        } 
+                                    ?>
                                     <a href="<?='/Salonoto/details.php?id=' . $sp['MaSP']?>" class="view-details-link">
                                         <i class="fa fa-link"></i> Chi tiết
                                     </a>
