@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th9 07, 2025 lúc 02:27 PM
+-- Thời gian đã tạo: Th9 08, 2025 lúc 02:37 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
--- Phiên bản PHP: 8.0.30
+-- Phiên bản PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -78,7 +78,8 @@ INSERT INTO `chitietdondathang` (`MaChiTietDonDatHang`, `MaSP`, `MaDonDatHang`, 
 (38, 1, 'DH385860', 1, '2025-09-07 14:10:31', '2026-09-07 14:10:31'),
 (39, 1, 'DH413514', 1, '2025-09-07 14:15:24', '2026-09-07 14:15:24'),
 (40, 1, 'DH270215', 1, '2025-09-07 14:18:53', '2026-09-07 14:18:53'),
-(41, 1, 'DH784217', 2, '2025-09-07 14:24:00', '2026-09-07 14:24:00');
+(41, 1, 'DH784217', 2, '2025-09-07 14:24:00', '2026-09-07 14:24:00'),
+(42, 7, 'DH773813', 1, '2025-09-07 16:34:57', '2028-09-07 16:34:57');
 
 -- --------------------------------------------------------
 
@@ -185,6 +186,7 @@ INSERT INTO `dondathang` (`MaDonDatHang`, `TongTien`, `TrangThai`, `CreatedAt`, 
 ('DH566106', 15600000.00, 'ChoXuLy', '2025-09-07 21:06:27', 'long', 'SALE20', 3900000),
 ('DH598478', 19500000.00, 'ChoXuLy', '2025-09-07 21:06:11', 'long', 'S', 0),
 ('DH610162', 19500000.00, 'ChoXuLy', '2025-09-07 20:48:50', 'long', NULL, 0),
+('DH773813', 3350000.00, 'DaHoanThanh', '2025-09-07 21:34:57', 'a', 'GIAM50K', 50000),
 ('DH784217', 31200000.00, 'ChoXuLy', '2025-09-07 21:24:00', 'long', 'SALE20', 7800000),
 ('DH814999', 10200000.00, 'ChoXuLy', '2025-09-07 14:22:59', 'a', NULL, 0),
 ('DH841683', 19500000.00, 'ChoXuLy', '2025-09-07 20:03:40', 'a', NULL, 0),
@@ -208,6 +210,13 @@ CREATE TABLE `giohang` (
   `UpdatedAt` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `giohang`
+--
+
+INSERT INTO `giohang` (`MaSP`, `TenTaiKhoan`, `SL`, `UpdatedAt`) VALUES
+(10, 'a', 1, '2025-09-07 21:40:47');
+
 -- --------------------------------------------------------
 
 --
@@ -226,7 +235,8 @@ CREATE TABLE `kho` (
 
 INSERT INTO `kho` (`MaSP`, `SLTon`, `LastUpdated`) VALUES
 (1, 9, '2025-08-28 20:05:42'),
-(7, 7, '2025-09-07 13:03:18');
+(7, 6, '2025-09-07 14:36:49'),
+(15, 5, '2025-09-07 17:37:53');
 
 -- --------------------------------------------------------
 
@@ -273,7 +283,7 @@ CREATE TABLE `magiamgia` (
 --
 
 INSERT INTO `magiamgia` (`MaCode`, `GiaTri`, `Kieu`, `HanSuDung`, `SoLanSuDung`) VALUES
-('GIAM50K', 50000, 'AMOUNT', '2025-12-31', 20),
+('GIAM50K', 50000, 'AMOUNT', '2025-12-31', 19),
 ('NEWUSER', 100000, 'AMOUNT', '2025-10-31', 10),
 ('SALE10', 10, 'PERCENT', '2025-12-31', 97),
 ('SALE20', 20, 'PERCENT', '2025-09-30', 47),
@@ -330,7 +340,33 @@ INSERT INTO `nhaphang` (`MaNhap`, `MaSP`, `SL`, `GiaNhap`, `TGNhap`, `MaNCC`) VA
 (6, 1, 1, 0.00, '2025-08-24 02:46:03', 1),
 (7, 1, 1, 0.00, '2025-08-24 02:46:33', 1),
 (8, 1, 1, 0.00, '2025-08-26 01:07:42', 1),
-(9, 1, 2, 0.00, '2025-08-26 13:11:20', 1);
+(9, 1, 2, 0.00, '2025-08-26 13:11:20', 1),
+(10, 15, 2, 40000000.00, '2025-09-08 00:37:34', 3),
+(11, 15, 3, 41000000.00, '2025-09-08 00:37:53', 2);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `quangcao`
+--
+
+CREATE TABLE `quangcao` (
+  `MaQC` int(11) NOT NULL,
+  `TenQC` varchar(255) DEFAULT NULL,
+  `MoTa` varchar(255) DEFAULT NULL,
+  `AnhQC` varchar(255) DEFAULT NULL,
+  `TinhTrang` tinyint(4) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `quangcao`
+--
+
+INSERT INTO `quangcao` (`MaQC`, `TenQC`, `MoTa`, `AnhQC`, `TinhTrang`) VALUES
+(1, 'QC 1', 'Mô tả QC 1', '/Salon/assets/img/sliders/s1.png', 1),
+(2, 'QC 2', 'Mô tả QC 2', '/Salon/assets/img/sliders/s2.png', 1),
+(3, 'QC 3', 'Mô tả QC 3', '/Salon/assets/img/sliders/s3.png', 1),
+(4, 'QC 4', 'Mô tả QC 4', '/Salon/assets/img/sliders/s4.png', 1);
 
 -- --------------------------------------------------------
 
@@ -385,30 +421,6 @@ INSERT INTO `sanpham` (`MaSP`, `TenSP`, `ThongSoSanPham`, `Gia`, `HinhAnh`, `Upd
 (14, 'Màn Hình Zestech Z18', 'Thiết bị sử dụng chip UIS8581 với CPU Octa-core ARM Cortex A55, tốc độ 1.6GHz, RAM 2GB và ROM 32GB, chạy hệ điều hành Android 10. Màn hình cảm ứng IPS Full HD kích thước 9 hoặc 10 inch, độ phân giải 1280x720px, phủ kính cường lực 2.5D. Hỗ trợ kết nối WiFi, Bluetooth và SIM 4G, sản xuất năm 2024, đáp ứng tốt nhu cầu giải trí và điều khiển thông minh trên xe.', 4900000.00, '/Salonoto/assets/img/sanpham/a7.jpg', '2025-09-04 03:21:04', 1, 0),
 (15, 'LAZANG DAEWOO GENTRA 14 INCH PCD 4X100', 'Dòng lazang độ cho lazang xe Gentra của hãng Rapidash có thông số 14 inch, PCD 4X100, màu đen đỏ được làm từ hợp kim nhôm cao cấp và sơn tĩnh điện cực kỳ bền đẹp.', 58000000.00, '/Salonoto/assets/img/sanpham/a10.png', '2025-09-04 03:21:42', 8, 0),
 (16, 'Máy lọc không khí ô tô Hàn Quốc Allo A600 (APS-600)', '- Máy lọc không khi thương hiệu Allo Korea Hàn Quốc  Allo là thương hiệu phụ kiện ô tô nổi tiếng tại Hàn Quốc\r\n - Máy lọc không khí Allo A600 với thiết kế đẹp hiện đại  \r\n- Máy lọc không khí dựa trên sinh ra ION âm và lọc không khí với quạt gió và màng lọc Hepa  \r\n- Nồng độ ion âm của máy lên đến 5 triệu đơn vị /cm3 giúp lọc không khí khử mùi, khử khuẩn  \r\n- Màng lọc 3 lớp : lớp cotton, lớp than hoạt tính, lớp màng lọc Hepa giúp lọc sách tới 99.97% bụi mịn và vi khuẩn  \r\n- Quạt gió 2 tốc độ thay đổi được, chế độ quạt turbo mạnh mẽ.  \r\n- 312 lỗ xung quanh máy giúp lấy không khí từ các hướng  \r\n- Độ ồn của máy nhỏ ở mức 30dp đến 35dp \r\n - Nguồn điện sử dụng điện USB, có thể dùng trên xe ô tô hay ở nhà, văn phòng  \r\n- Kích thước sản phẩm 70x70x186 mm', 950000.00, '/Salonoto/assets/img/sanpham/a10.jpg', '2025-09-07 18:49:40', 9, 2);
-
--- --------------------------------------------------------
-
---
--- Cấu trúc bảng cho bảng `sliders`
---
-
-CREATE TABLE `sliders` (
-  `SliderID` int(11) NOT NULL,
-  `SliderName` varchar(255) DEFAULT NULL,
-  `Description` varchar(255) DEFAULT NULL,
-  `Thumbnail` varchar(255) DEFAULT NULL,
-  `Status` tinyint(4) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Đang đổ dữ liệu cho bảng `sliders`
---
-
-INSERT INTO `sliders` (`SliderID`, `SliderName`, `Description`, `Thumbnail`, `Status`) VALUES
-(1, 'Slider 1', 'Mô tả slide 1', '/Salon/assets/img/sliders/s1.png', 1),
-(2, 'Slider 2', 'Mô tả slide 2', '/Salon/assets/img/sliders/s2.png', 1),
-(3, 'Slider 3', 'Mô tả slide 3', '/Salon/assets/img/sliders/s3.png', 1),
-(4, 'Slider 4', 'Mô tả slide 4', '/Salon/assets/img/sliders/s4.png', 1);
 
 -- --------------------------------------------------------
 
@@ -468,7 +480,8 @@ INSERT INTO `thanhtoan` (`MaTT`, `TenTaiKhoan`, `TongTien`, `PhuongThucTT`, `Tra
 (32, 'long', 17550000.00, 'COD', 'ChoXuLy', 'GD6059165', 'DH385860', '2025-09-07 21:10:31', '2025-09-07 21:10:31', '', 'SALE10', 1950000),
 (33, 'long', 17550000.00, 'COD', 'ChoXuLy', 'GD4150342', 'DH413514', '2025-09-07 21:15:24', '2025-09-07 21:15:24', '', 'SALE10', 1950000),
 (34, 'long', 17550000.00, 'COD', 'ChoXuLy', 'GD6564771', 'DH270215', '2025-09-07 21:18:53', '2025-09-07 21:18:53', '', 'SALE10', 1950000),
-(35, 'long', 31200000.00, 'COD', 'ChoXuLy', 'GD8447815', 'DH784217', '2025-09-07 21:24:00', '2025-09-07 21:24:00', '', 'SALE20', 7800000);
+(35, 'long', 31200000.00, 'COD', 'ChoXuLy', 'GD8447815', 'DH784217', '2025-09-07 21:24:00', '2025-09-07 21:24:00', '', 'SALE20', 7800000),
+(36, 'a', 3350000.00, 'COD', 'HoanTat', 'GD8500823', 'DH773813', '2025-09-07 21:34:57', '2025-09-07 21:36:49', '', 'GIAM50K', 50000);
 
 -- --------------------------------------------------------
 
@@ -571,6 +584,12 @@ ALTER TABLE `nhaphang`
   ADD KEY `MaSP` (`MaSP`);
 
 --
+-- Chỉ mục cho bảng `quangcao`
+--
+ALTER TABLE `quangcao`
+  ADD PRIMARY KEY (`MaQC`);
+
+--
 -- Chỉ mục cho bảng `quyen`
 --
 ALTER TABLE `quyen`
@@ -584,12 +603,6 @@ ALTER TABLE `sanpham`
   ADD PRIMARY KEY (`MaSP`),
   ADD UNIQUE KEY `TenSP` (`TenSP`),
   ADD KEY `MaLoaiSP` (`MaLoaiSP`);
-
---
--- Chỉ mục cho bảng `sliders`
---
-ALTER TABLE `sliders`
-  ADD PRIMARY KEY (`SliderID`);
 
 --
 -- Chỉ mục cho bảng `thanhtoan`
@@ -613,7 +626,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT cho bảng `chitietdondathang`
 --
 ALTER TABLE `chitietdondathang`
-  MODIFY `MaChiTietDonDatHang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `MaChiTietDonDatHang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT cho bảng `datdichvu`
@@ -643,7 +656,13 @@ ALTER TABLE `nhacungcap`
 -- AUTO_INCREMENT cho bảng `nhaphang`
 --
 ALTER TABLE `nhaphang`
-  MODIFY `MaNhap` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `MaNhap` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT cho bảng `quangcao`
+--
+ALTER TABLE `quangcao`
+  MODIFY `MaQC` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT cho bảng `quyen`
@@ -658,16 +677,10 @@ ALTER TABLE `sanpham`
   MODIFY `MaSP` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
--- AUTO_INCREMENT cho bảng `sliders`
---
-ALTER TABLE `sliders`
-  MODIFY `SliderID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-
---
 -- AUTO_INCREMENT cho bảng `thanhtoan`
 --
 ALTER TABLE `thanhtoan`
-  MODIFY `MaTT` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `MaTT` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- Các ràng buộc cho các bảng đã đổ
