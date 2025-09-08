@@ -29,6 +29,64 @@ foreach ($orders as &$order) {
     ");
 }
 
+$alert = "";
+$alert1 = "";
+
+if (isset($_POST['submit'])) {
+    // Cập nhật avatar nếu có file mới
+    if (!empty($_FILES['avatar']['name'])) {
+        $extension = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
+        $image_name = $_SESSION['TenTaiKhoan'] . "." . $extension;
+        $image_path = '/Salonoto/assets/img/' . $image_name;
+
+        if (move_uploaded_file($_FILES['avatar']['tmp_name'], $_SERVER['DOCUMENT_ROOT'] . $image_path)) {
+            if (Database::NonQuery("UPDATE users SET Avatar = '$image_path' WHERE TenTaiKhoan = '" . $_SESSION['TenTaiKhoan'] . "'")) {
+                $_SESSION['Avatar'] = $image_path;
+                $alert1 .= '<div class="alert alert-success alert-dismissible fade show" role="alert">
+                            Ảnh đại diện đã được cập nhật thành công
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                           </div>';
+            } else {
+                $alert1 .= '<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            Cập nhật ảnh đại diện thất bại
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                           </div>';
+            }
+        } else {
+            $alert1 .= '<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        Upload ảnh thất bại
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                       </div>';
+        }
+    }
+
+    // Cập nhật thông tin cá nhân
+    $tendaydu = $_POST['tendaydu'] ?? '';
+    $sdt      = $_POST['sdt'] ?? '';
+    $email    = $_POST['email'] ?? '';
+    $diachi   = $_POST['diachi'] ?? '';
+
+    $sql = "UPDATE users 
+            SET TenDayDu='$tendaydu', SDT='$sdt', Email='$email', DiaChi='$diachi'
+            WHERE TenTaiKhoan='" . $_SESSION['TenTaiKhoan'] . "'";
+
+    if (Database::NonQuery($sql)) {
+        $alert .= '<div class="alert alert-success alert-dismissible fade show" role="alert">
+                    Cập nhật thông tin cá nhân thành công
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                   </div>';
+
+        // ✅ Refresh lại dữ liệu user
+        $user = Database::GetData("SELECT * FROM users WHERE TenTaiKhoan = '" . $_SESSION['TenTaiKhoan'] . "'", ['row' => 0]);
+    } else {
+        $alert .= '<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    Cập nhật thất bại, vui lòng thử lại
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                   </div>';
+    }
+}
+
+
 // Lấy lịch sử dịch vụ
 $services = Database::GetData("SELECT * FROM datdichvu WHERE TenTaiKhoan='" . $_SESSION['TenTaiKhoan'] . "' ORDER BY NgayDat DESC");
 
@@ -72,7 +130,7 @@ function ServiceStatusBadge($status) {
 
     <!-- Cột 1: Avatar -->
     <div class="profile__avatar-col">
-        <img class="profile__avatar" src="<?=$user['Avatar']?>" alt="Avatar">
+        <img class="profile__avatar" src="<?=$user['Avatar']?>?v=<?=time()?>" alt="Avatar">
     </div>
 
     <!-- Cột 2: Thông tin cá nhân -->
@@ -93,6 +151,11 @@ function ServiceStatusBadge($status) {
                     <a class="btn" href="/Salonoto/index.php">Trang chủ</a>
                 </div>
             </div>
+
+        <!-- Chỗ hiển thị thông báo -->
+        <div id="alert-box" class="mt-3">
+            <?= $alert ?>
+        </div>
         </form>
     </div>
 
@@ -146,7 +209,7 @@ function ServiceStatusBadge($status) {
             </div>
         </div>
 
-        <!-- Lịch sử dịch vụ (giữ nguyên) -->
+        <!-- Lịch sử dịch vụ -->
         <div class="profile__history-card">
             <h3>Lịch sử đặt dịch vụ</h3>
             <div class="history-table-wrapper">
@@ -237,7 +300,6 @@ function showOrderDetail(orderId) {
                  </tr>`;
     });
 
-    // thêm dòng hiển thị mã giảm giá
     if (order.MaGiamGia) {
         html += `<tr>
                     <td colspan="3" class="text-end"><b>Khuyến mãi</b></td>
@@ -251,9 +313,7 @@ function showOrderDetail(orderId) {
     document.getElementById('order-detail-body').innerHTML = html;
     $('#modal-order-detail').modal('show');
 }
-
-
 </script>
 
 </body>
-</html> 
+</html>
