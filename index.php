@@ -3,20 +3,23 @@
     <!-- Slider -->
     <div class="block-slider block-slider4">
         <ul class="" id="bxslider-home4">
-             <?php
-                        $sql = 'SELECT * FROM sliders WHERE Status = 1';
-                        $sliders = Database::GetData($sql);
-                            if ($sliders) {
-                                foreach ($sliders as $slider) {
-                                    echo '<li>
-                                            <img src="' . $slider['Thumbnail'] . '" alt="Slide">
-                                            <!-- <div class="caption-group">
-                                                <h2 class="caption title">' . $slider['SliderName'] . '</h2>
-                                                <h4 class="caption subtitle">' . $slider['Description'] . '</h4>
-                                            </div> -->
-                                          </li>';
-                                }
-                            }
+                <?php
+                $sql = 'SELECT * FROM quangcao WHERE TinhTrang = 1';
+                $quangcaoData = Database::GetData($sql);
+
+                if ($quangcaoData) {
+                    foreach ($quangcaoData as $qc) {
+                        echo '<li>
+                                <img src="' . $qc['AnhQC'] . '" alt="Slide">
+                                <!-- 
+                                <div class="caption-group">
+                                    <h2 class="caption title">' . $qc['TenQC'] . '</h2>
+                                    <h4 class="caption subtitle">' . $qc['MoTa'] . '</h4>
+                                </div> 
+                                -->
+                            </li>';
+                    }
+                }
                 ?>
         </ul>
     </div>
@@ -107,3 +110,4 @@
     </div>
 </div> <!-- End main content area -->
 <?php include 'footer.php'?>
+<!-- test -->

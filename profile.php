@@ -133,7 +133,7 @@ function ServiceStatusBadge($status) {
         <img class="profile__avatar" src="<?=$user['Avatar']?>?v=<?=time()?>" alt="Avatar">
     </div>
 
-    <!-- Cột 2: Thông tin cá nhân -->
+    <!-- Cột 2: Thông tin cá nhân 123 -->
     <div class="profile__form">
         <div class="profile__form--header"><h3>Thông tin cá nhân</h3></div>
         <form class="profile__form--body" method="POST" enctype="multipart/form-data">

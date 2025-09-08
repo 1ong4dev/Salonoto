@@ -275,7 +275,7 @@ new Chart(document.getElementById('chartImport').getContext('2d'), {
   options: { responsive: true, scales: { y: { beginAtZero: true } } }
 });
 
-// Tồn kho
+// Tồn kho 123
 new Chart(document.getElementById('chartStock').getContext('2d'), {
   type: 'bar',
   data: {

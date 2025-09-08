@@ -38,9 +38,9 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="../baocaothongke/list.php" class="nav-link">
+                    <a href="../baocao/list.php" class="nav-link">
                         <i class="nav-icon fas fa-chart-bar"></i>
-                        <p>Bảng điều khiển</p>
+                        <p>Báo cáo & Thống kê</p>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -113,12 +113,6 @@
                     <a href="../sliders/list.php" class="nav-link">
                         <i class="nav-icon fas fa-images"></i>
                         <p>Quảng cáo</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../baocao/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-chart-line"></i>
-                        <p>Báo Cáo Thống Kê</p>
                     </a>
                 </li>
                 <li class="nav-item">

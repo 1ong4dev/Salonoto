@@ -1,74 +1,70 @@
 <?php include '../header.php'?>
 
 <?php
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $image_path = '';
-        if (isset($_FILES['pic'])) {
-            $image_size = $_FILES['pic']['size'];
-            $image_path = '/uploads/' . $_FILES['pic']['name'];
-            move_uploaded_file($_FILES['pic']['tmp_name'], '../../' . $image_path);
-        }
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $image_path = '';
+    if (isset($_FILES['pic'])) {
+        $image_path = '/uploads/' . $_FILES['pic']['name'];
+        move_uploaded_file($_FILES['pic']['tmp_name'], '../../' . $image_path);
+    }
 
-        // Add items
-        if (isset($_POST['action']) && $_POST['action'] == 'add') {
-            $name = isset($_POST['name']) ? $_POST['name'] : '';
-            $description = isset($_POST['description']) ? $_POST['description'] : '';
-            $status = isset($_POST['status']) ? $_POST['status'] : '';
+    // Thêm quảng cáo
+    if (isset($_POST['action']) && $_POST['action'] == 'add') {
+        $name = $_POST['name'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $status = $_POST['status'] ?? 0;
 
-            if (!empty($name)) {
-                $sql = "INSERT INTO sliders VALUES (null, '$name', '$description', '$image_path', $status)";
-                if (Database::NonQuery($sql)) {
-                    $message = [
-                        'type' => 'success',
-                        'text' => 'Thêm thành công',
-                    ];
-                }
-            } else {
-                $message = [
-                    'type' => 'warning',
-                    'text' => 'Tên slider không được trống',
-                ];
+        if (!empty($name)) {
+            $sql = "INSERT INTO quangcao (TenQC, MoTa, AnhQC, TinhTrang) 
+                    VALUES ('$name', '$description', '$image_path', $status)";
+            if (Database::NonQuery($sql)) {
+                $message = ['type' => 'success', 'text' => 'Thêm thành công'];
             }
-        }
-
-        // Edit items
-        if (isset($_POST['action']) && $_POST['action'] == 'edit') {
-            $id = isset($_GET['edit-id']) ? $_GET['edit-id'] : '';
-            $name = isset($_POST['name']) ? $_POST['name'] : '';
-            $description = isset($_POST['description']) ? $_POST['description'] : '';
-            $thumbnail = isset($_POST['thumbnail']) ? $_POST['thumbnail'] : '';
-            $status = isset($_POST['status']) ? $_POST['status'] : '';
-
-            if (!empty($name)) {
-                $thumbnail_sql = $image_path != '/uploads/' ? "Thumbnail = '$image_path', " : '';
-                $sql = "UPDATE sliders SET SliderName = '$name', Description = '$description', $thumbnail_sql Status = $status WHERE SliderID = $id";
-                if (Database::NonQuery($sql)) {
-                    $message = [
-                        'type' => 'success',
-                        'text' => 'Cập nhật thành công',
-                    ];
-                }
-            } else {
-                $message = [
-                    'type' => 'warning',
-                    'text' => 'Tên slider không được trống',
-                ];
-            }
+        } else {
+            $message = ['type' => 'warning', 'text' => 'Tên quảng cáo không được trống'];
         }
     }
 
-    // Delete items
-    if (isset($_GET['del-id'])) {
-        $id = isset($_GET['del-id']) ? $_GET['del-id'] : '';
-        $sql = "DELETE FROM sliders WHERE SliderID = $id";
+    // Sửa quảng cáo
+    if (isset($_POST['action']) && $_POST['action'] == 'edit') {
+        $id = isset($_GET['edit-id']) ? $_GET['edit-id'] : '';
+        $name = isset($_POST['name']) ? $_POST['name'] : '';
+        $description = isset($_POST['description']) ? $_POST['description'] : '';
+        $status = isset($_POST['status']) ? $_POST['status'] : '';
 
-        if (Database::NonQuery($sql)) {
+        if (!empty($name)) {
+            $updates = [];
+            $updates[] = "TenQC = '$name'";
+            $updates[] = "MoTa = '$description'";
+            if ($image_path != '/uploads/') {
+                $updates[] = "AnhQC = '$image_path'";
+            }
+            $updates[] = "TinhTrang = $status";
+
+            $sql = "UPDATE quangcao SET " . implode(', ', $updates) . " WHERE MaQC = $id";
+
+            if (Database::NonQuery($sql)) {
+                $message = [
+                    'type' => 'success',
+                    'text' => 'Cập nhật thành công',
+                ];
+            }
+        } else {
             $message = [
-                'type' => 'success',
-                'text' => 'Xoá thành công',
+                'type' => 'warning',
+                'text' => 'Tên quảng cáo không được trống',
             ];
         }
     }
+}
+// Xóa quảng cáo
+if (isset($_GET['del-id'])) {
+    $id = $_GET['del-id'] ?? '';
+    $sql = "DELETE FROM quangcao WHERE MaQC = $id";
+    if (Database::NonQuery($sql)) {
+        $message = ['type' => 'success', 'text' => 'Xoá thành công'];
+    }
+}
 ?>
 
 <?php include '../sidebar.php'?>
@@ -77,38 +73,31 @@
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0">Slider</h1>
-                </div>
+                <div class="col-sm-6"><h1 class="m-0">Quảng cáo</h1></div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item">
-                            <a href="<?=ADMIN_URL?>/"><i class="fas fa-home"></i></a>
-                        </li>
-                        <li class="breadcrumb-item active">Slider</li>
+                        <li class="breadcrumb-item"><a href="<?=ADMIN_URL?>/"><i class="fas fa-home"></i></a></li>
+                        <li class="breadcrumb-item active">Quảng cáo</li>
                     </ol>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main content -->
     <section class="content">
         <?php include '../alert.php'?>
 
-        <!-- Modal: Add -->
+        <!-- Modal Thêm -->
         <div class="modal fade" id="modal-add" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-scrollable" role="document">
                 <form class="modal-content" method="POST" enctype="multipart/form-data">
                     <div class="modal-header bg-primary">
-                        <h5 class="modal-title">Thêm slider</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <h5 class="modal-title">Thêm quảng cáo</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
                     <div class="modal-body">
                         <div class="form-group">
-                            <label>Tên slider</label>
+                            <label>Tên quảng cáo</label>
                             <input type="text" name="name" class="form-control">
                         </div>
                         <div class="form-group">
@@ -135,36 +124,34 @@
             </div>
         </div>
 
-        <!-- Modal: Edit -->
+        <!-- Modal Sửa -->
         <?php
-            $id = isset($_GET['edit-id']) ? $_GET['edit-id'] : '';
-            $slider = [];
+            $id = $_GET['edit-id'] ?? '';
+            $qcData = [];
             if ($id != '') {
-                $sql = "SELECT * FROM sliders WHERE SliderID = $id";
-                $slider = Database::GetData($sql, ['row' => 0]);
+                $sql = "SELECT * FROM quangcao WHERE MaQC = $id";
+                $qcData = Database::GetData($sql, ['row' => 0]);
             }
         ?>
         <div class="modal fade" id="modal-edit" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-scrollable" role="document">
                 <form class="modal-content" method="POST" enctype="multipart/form-data">
                     <div class="modal-header bg-primary">
-                        <h5 class="modal-title">Sửa slider</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <h5 class="modal-title">Sửa quảng cáo</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
                     <div class="modal-body">
                         <div class="form-group">
-                            <label>Mã slider</label>
-                            <input type="text" name="id" value="<?=$slider['SliderID']?>" class="form-control" disabled>
+                            <label>Mã quảng cáo</label>
+                            <input type="text" value="<?=$qcData['MaQC']?>" class="form-control" disabled>
                         </div>
                         <div class="form-group">
-                            <label>Tên slider</label>
-                            <input type="text" name="name" value="<?=$slider['SliderName']?>" class="form-control">
+                            <label>Tên quảng cáo</label>
+                            <input type="text" name="name" value="<?=$qcData['TenQC']?>" class="form-control">
                         </div>
                         <div class="form-group">
                             <label>Mô tả</label>
-                            <input type="text" name="description" value="<?=$slider['Description']?>" class="form-control">
+                            <input type="text" name="description" value="<?=$qcData['MoTa']?>" class="form-control">
                         </div>
                         <div class="form-group">
                             <label>Hình ảnh</label>
@@ -173,8 +160,8 @@
                         <div class="form-group">
                             <label>Trạng thái</label>
                             <select class="form-control" name="status">
-                                <option value="0" <?=$slider['Status'] == 0 ? 'selected' : ''?>>Khóa</option>
-                                <option value="1" <?=$slider['Status'] == 1 ? 'selected' : ''?>>Hoạt động</option>
+                                <option value="1" <?=$qcData['TinhTrang'] == 1 ? 'selected' : ''?>>Hoạt động</option>
+                                <option value="0" <?=$qcData['TinhTrang'] == 0 ? 'selected' : ''?>>Khóa</option>
                             </select>
                         </div>
                     </div>
@@ -186,6 +173,7 @@
             </div>
         </div>
 
+        <!-- Bảng quảng cáo -->
         <div class="container-fluid">
             <div class="row my-2 d-flex-end">
                 <button type="button" class="btn btn-success mx-2" data-toggle="modal" data-target="#modal-add">
@@ -207,8 +195,8 @@
                         <table class="table table-hover table-bordered">
                             <thead class="table-warning">
                                 <tr>
-                                    <th>Mã slider</th>
-                                    <th>Tên slider</th>
+                                    <th>Mã quảng cáo</th>
+                                    <th>Tên quảng cáo</th>
                                     <th>Mô tả</th>
                                     <th>Hình ảnh</th>
                                     <th>Trạng thái</th>
@@ -217,40 +205,34 @@
                             </thead>
                             <tbody>
                                 <?php
-                                    $page = isset($_GET['page']) ? $_GET['page'] : 1;
-                                    $pager = (new Pagination())->get('sliders', $page, ROW_OF_PAGE);
+                                $page = $_GET['page'] ?? 1;
+                                $pager = (new Pagination())->get('quangcao', $page, ROW_OF_PAGE);
 
-                                    $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : '';
-                                    if ($keyword) {
-                                        $keyword = "WHERE SliderName LIKE '%$keyword%'";
+                                $keyword = $_GET['keyword'] ?? '';
+                                $where = $keyword ? "WHERE TenQC LIKE '%$keyword%'" : '';
+
+                                $sql = "SELECT * FROM quangcao $where ORDER BY MaQC DESC LIMIT {$pager['StartIndex']}, " . ROW_OF_PAGE;
+                                $qcList = Database::GetData($sql);
+
+                                if ($qcList) {
+                                    foreach ($qcList as $qc) {
+                                        echo '<tr>
+                                                <th>' . $qc['MaQC'] . '</th>
+                                                <td>' . $qc['TenQC'] . '</td>
+                                                <td>' . $qc['MoTa'] . '</td>
+                                                <td><img height="60" src="' . $qc['AnhQC'] . '" alt="" /></td>
+                                                <td>' . Helper::StatusBadge($qc['TinhTrang']) . '</td>
+                                                <td>
+                                                    <a href="?edit-id=' . $qc['MaQC'] . '" class="btn btn-warning"><i class="fas fa-marker"></i></a>
+                                                    <a onclick="removeRow(' . $qc['MaQC'] . ')" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
+                                                </td>
+                                              </tr>';
                                     }
-
-                                    $sql = "SELECT * FROM sliders $keyword ORDER BY SliderID DESC LIMIT " . $pager['StartIndex'] . ', ' . ROW_OF_PAGE;
-                                    $sliders = Database::GetData($sql);
-
-                                    if ($sliders) {
-                                        foreach ($sliders as $slider) {
-                                            echo '
-                                                <tr>
-                                                    <th>' . $slider['SliderID'] . '</th>
-                                                    <td>' . $slider['SliderName'] . '</td>
-                                                    <td>' . $slider['Description'] . '</td>
-                                                    <td><img height="60" src="' . $slider['Thumbnail'] . '" alt="" /></td>
-                                                    <td>' . Helper::StatusBadge($slider['Status']) . '</td>
-                                                    <td>
-                                                        <a href="?edit-id=' . $slider['SliderID'] . '"class="btn btn-warning"><i class="fas fa-marker"></i></a>
-                                                        <a onclick="removeRow(' . $slider['SliderID'] . ')" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
-                                                    </td>
-                                                </tr>
-                                            ';
-                                        }
-                                    } else {
-                                        echo '<tr><td colspan="100%" class="text-center">Không có dữ liệu</td></tr>';
-                                    }
+                                } else {
+                                    echo '<tr><td colspan="100%" class="text-center">Không có dữ liệu</td></tr>';
+                                }
                                 ?>
-                                <button type="button" data-toggle="modal" data-target="#modal-edit" hidden>
-                                    <i class="fas fa-plus"></i>
-                                </button>
+                                <button type="button" data-toggle="modal" data-target="#modal-edit" hidden id="open-edit"></button>
                             </tbody>
                         </table>
                     </div>
@@ -261,19 +243,19 @@
                 <div>Hiển thị từ <?=$pager['StartPage']?> đến <?=$pager['EndPage']?> của <?=$pager['TotalItems']?> bản ghi</div>
                 <ul class="pagination">
                     <?php
-                        for ($i = 1; $i <= $pager['TotalPages']; $i++) {
-                            $active = $page == $i ? 'active' : '';
-                            echo '<li class="page-item ' . $active . '">
+                    for ($i = 1; $i <= $pager['TotalPages']; $i++) {
+                        $active = $page == $i ? 'active' : '';
+                        echo '<li class="page-item ' . $active . '">
                                 <a class="page-link" href="?page=' . $i . '">' . $i . '</a>
-                            </li>';
-                        }
+                              </li>';
+                    }
                     ?>
                 </ul>
             </div>
         </div>
     </section>
-    <!-- /.content -->
 </div>
+
 <?php include '../footer.php'?>
 
 <script>
@@ -282,14 +264,12 @@ $(document).ready(function() {
         var url = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
         for (var i = 0; i < url.length; i++) {
             var urlparam = url[i].split('=');
-            if (urlparam[0] == param) {
-                return urlparam[1];
-            }
+            if (urlparam[0] == param) return urlparam[1];
         }
     }
 
-    if (GetParameterValues('edit-id') != undefined) {
-        document.querySelector("[data-target='#modal-edit']").click();
+    if (GetParameterValues('edit-id') !== undefined) {
+        document.getElementById('open-edit').click();
     }
 });
 
@@ -299,4 +279,4 @@ function removeRow(id) {
     }
 }
 </script>
-<!-- testt -->
+<!-- test -->
