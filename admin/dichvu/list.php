@@ -1,4 +1,5 @@
 <?php include '../header.php'?>
+<?php include '../sidebar.php'?>
 
 <?php
 // Xử lý POST (Thêm / Sửa)
@@ -12,8 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $status = $_POST['status'] ?? 'HoatDong';
 
         if (!empty($name)) {
-            $sql = "INSERT INTO dichvu (TenDichVu, TrangThai)
-                    VALUES ('$name','$status')";
+            $sql = "INSERT INTO dichvu (TenDichVu, TrangThai) VALUES ('$name','$status')";
             if (Database::NonQuery($sql)) $message = ['type'=>'success','text'=>'Thêm dịch vụ thành công'];
         } else {
             $message = ['type'=>'warning','text'=>'Tên dịch vụ không được để trống'];
@@ -27,10 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $status = $_POST['status'] ?? 'HoatDong';
 
         if (!empty($name) && $id) {
-            $sql = "UPDATE dichvu SET 
-                        TenDichVu='$name',
-                        TrangThai='$status'
-                    WHERE MaDichVu=$id";
+            $sql = "UPDATE dichvu SET TenDichVu='$name', TrangThai='$status' WHERE MaDichVu=$id";
             if (Database::NonQuery($sql)) $message = ['type'=>'success','text'=>'Cập nhật dịch vụ thành công'];
         } else {
             $message = ['type'=>'warning','text'=>'Tên dịch vụ không được để trống'];
@@ -56,8 +53,6 @@ function ServiceStatusBadge($status) {
     }
 }
 ?>
-
-<?php include '../sidebar.php'?>
 
 <div class="content-wrapper">
     <div class="content-header">
@@ -107,15 +102,10 @@ function ServiceStatusBadge($status) {
         </div>
 
         <!-- Modal Sửa dịch vụ -->
-        <?php
-        $edit_id = $_GET['edit-id'] ?? '';
-        $service = [];
-        if ($edit_id != '') $service = Database::GetData("SELECT * FROM dichvu WHERE MaDichVu=$edit_id", ['row'=>0]);
-        ?>
         <div class="modal fade" id="modal-edit" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-scrollable" style="max-width: 500px">
                 <form class="modal-content" method="POST">
-                    <input type="hidden" name="edit_id" value="<?=$service['MaDichVu'] ?? ''?>">
+                    <input type="hidden" name="edit_id" id="edit_id" value="">
                     <div class="modal-header bg-primary">
                         <h5 class="modal-title">Sửa dịch vụ</h5>
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
@@ -123,17 +113,17 @@ function ServiceStatusBadge($status) {
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Mã dịch vụ</label>
-                            <input type="text" value="<?=$service['MaDichVu'] ?? ''?>" class="form-control" disabled>
+                            <input type="text" id="edit_code" class="form-control" disabled>
                         </div>
                         <div class="form-group">
                             <label>Tên dịch vụ</label>
-                            <input type="text" name="name" value="<?=$service['TenDichVu'] ?? ''?>" class="form-control">
+                            <input type="text" name="name" id="edit_name" class="form-control">
                         </div>
                         <div class="form-group">
                             <label>Trạng thái</label>
-                            <select class="form-control" name="status">
-                                <option value="HoatDong" <?=($service['TrangThai'] ?? '')=='HoatDong'?'selected':''?>>Hoạt động</option>
-                                <option value="KhongHoatDong" <?=($service['TrangThai'] ?? '')=='KhongHoatDong'?'selected':''?>>Không hoạt động</option>
+                            <select class="form-control" name="status" id="edit_status">
+                                <option value="HoatDong">Hoạt động</option>
+                                <option value="KhongHoatDong">Không hoạt động</option>
                             </select>
                         </div>
                     </div>
@@ -186,7 +176,12 @@ function ServiceStatusBadge($status) {
                                             <td>'.$dv['TenDichVu'].'</td>
                                             <td>'.ServiceStatusBadge($dv['TrangThai']).'</td>
                                             <td>
-                                                <a href="?edit-id='.$dv['MaDichVu'].'" class="btn btn-warning"><i class="fas fa-marker"></i></a>
+                                                <button class="btn btn-warning btn-edit" 
+                                                    data-id="'.$dv['MaDichVu'].'" 
+                                                    data-name="'.htmlspecialchars($dv['TenDichVu'], ENT_QUOTES).'" 
+                                                    data-status="'.$dv['TrangThai'].'">
+                                                    <i class="fas fa-marker"></i>
+                                                </button>
                                                 <a onclick="removeRow('.$dv['MaDichVu'].')" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
                                             </td>
                                         </tr>';
@@ -225,4 +220,20 @@ function removeRow(id){
         window.location='?del-id='+id;
     }
 }
+
+// Bật modal sửa và điền dữ liệu
+$(document).ready(function(){
+    $('.btn-edit').click(function(){
+        var id = $(this).data('id');
+        var name = $(this).data('name');
+        var status = $(this).data('status');
+
+        $('#edit_id').val(id);
+        $('#edit_code').val(id);
+        $('#edit_name').val(name);
+        $('#edit_status').val(status);
+
+        $('#modal-edit').modal('show');
+    });
+});
 </script>
