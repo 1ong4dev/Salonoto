@@ -88,4 +88,20 @@ class Database
         $connect->close();
         return $result == true;
     }
-}
+    /**
+     * Thực hiện INSERT và trả về ID vừa tạo
+     */
+        public static function NonQueryId($query)
+        {
+            $connect = self::Connect();
+            $result = $connect->query($query);
+            if ($result) {
+                $lastId = $connect->insert_id; 
+                $connect->close();
+                return $lastId;
+            } else {
+                die('Error: ' . $connect->error);
+            }
+        }
+
+    }
