@@ -10,32 +10,41 @@
 
         $keyword = isset($_GET['keyword']) ? "WHERE sp.TenSP LIKE '%" . $_GET['keyword'] . "%'" : '';
 
-        // Lấy sản phẩm
-        $sql = "SELECT sp.*, k.SLTon 
-                FROM SanPham sp 
-                LEFT JOIN kho k ON sp.MaSP = k.MaSP
-                $keyword 
-                ORDER BY sp.UpdatedAt
+        // Lấy sản phẩm (theo CSĐL mới, SL trong sanpham)
+        $sql = "SELECT sp.*, sp.SL AS SLTon
+                FROM sanpham sp
+                $keyword
+                ORDER BY sp.UpdatedAt DESC
                 LIMIT $limit OFFSET $offset";
         $SanPham = Database::GetData($sql);
 
         // Tổng sản phẩm để tính tổng số trang
-        $countSql = "SELECT COUNT(*) as total FROM SanPham sp $keyword";
+        $countSql = "SELECT COUNT(*) as total FROM sanpham sp $keyword";
         $totalResult = Database::GetData($countSql, ['row' => 0]);
         $totalProducts = $totalResult['total'];
         $totalPages = ceil($totalProducts / $limit);
         ?>
 
         <div class="row">
-            <?php foreach ($SanPham as $sp): ?>
-            <div class="col-md-3 col-sm-6" style="margin-bottom:20px;"> <!-- Khoảng cách giữa các hàng -->
+            <?php foreach ($SanPham as $sp): 
+                $giaHienThi = ($sp['GiaKhuyenMai'] && $sp['GiaKhuyenMai']>0) ? $sp['GiaKhuyenMai'] : $sp['Gia'];
+                $giamPhanTram = ($sp['GiaKhuyenMai'] && $sp['GiaKhuyenMai']>0) ? round((($sp['Gia'] - $sp['GiaKhuyenMai']) / $sp['Gia']) * 100) : 0;
+            ?>
+            <div class="col-md-3 col-sm-6" style="margin-bottom:20px;">
                 <div class="single-shop-product">
                     <div class="product-upper" style="width:100%; height:320px; overflow:hidden; text-align:center;">
-                        <img src="<?=$sp['HinhAnh']?>" style="width:100%; height:100%; object-fit:fill;"> <!-- ảnh cố định khung -->
+                        <img src="<?=$sp['HinhAnh']?>" style="width:100%; height:100%; object-fit:fill;">
                     </div>
                     <h2><a href="<?='/Salonoto/details.php?id=' . $sp['MaSP']?>"><?=$sp['TenSP']?></a></h2>
+                    
                     <div class="product-carousel-price">
-                        <ins><?=Helper::Currency($sp['Gia'])?></ins>
+                        <?php if($giamPhanTram > 0): ?>
+                            <ins><?=number_format($giaHienThi)?> ₫</ins>
+                            <del style="color:#999; margin-left:5px;"><?=number_format($sp['Gia'])?> ₫</del>
+                            <span style="color:red; font-weight:bold; margin-left:5px;">-<?=$giamPhanTram?>%</span>
+                        <?php else: ?>
+                            <ins><?=number_format($giaHienThi)?> ₫</ins>
+                        <?php endif; ?>
                     </div>
 
                     <div class="product-option-shop">
@@ -52,7 +61,6 @@
             <?php endforeach; ?>
         </div>
 
-        <!-- Phân trang -->
         <div style="text-align:center; margin-top:20px;">
             <?php for($i = 1; $i <= $totalPages; $i++): ?>
                 <a href="?<?php 
