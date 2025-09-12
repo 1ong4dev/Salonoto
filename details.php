@@ -59,10 +59,10 @@ $relatedProducts = Database::GetData($relatedSql);
                         <a href="<?='/Salonoto/category-product.php?MaLoaiSP=' . $sanPham['MaLoaiSP']?>"><?=$sanPham['TenLoaiSP']?></a>
                     <?php else: ?>Chưa phân loại<?php endif; ?>
                 </p>
-                <p><b>Số lượng trong kho: </b>
+                <p><b>Số lượng: </b>
                     <?php
                         if(isset($sanPham['SL'])){
-                            echo $sanPham['SL'] > 0 ? '<strong>'.$sanPham['SL'].'</strong>' : '<span style="color:red;font-weight:bold;">Hết hàng</span>';
+                            echo $sanPham['SL'] > 0 ? '<strong>'.$sanPham['SL'].'</strong>' : '<span style="color:red;font-weight:bold;">Liên hệ</span>';
                         } else { echo 'Chưa có thông tin'; }
                     ?>
                 </p>

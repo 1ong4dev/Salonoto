@@ -79,12 +79,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             foreach($cartItems as $item){
                 $MaSP = $item['MaSP'];
                 $SL = $item['SL'];
+                $DonGia = $item['Gia']; // đã xử lý khuyến mãi nếu có
                 $ThoiGianBH = intval($item['ThoiGianBaoHanh'] ?? 0);
                 $NgayBatDauBH = date('Y-m-d H:i:s');
                 $NgayKetThucBH = date('Y-m-d H:i:s', strtotime("+$ThoiGianBH year", strtotime($NgayBatDauBH)));
 
-                $sqlDetail = "INSERT INTO chitietdondathang (MaSP, MaDonDatHang, SL, NgayBatDauBH, NgayKetThucBH)
-                              VALUES ($MaSP, $MaDonDatHangID, $SL, '$NgayBatDauBH', '$NgayKetThucBH')";
+                $sqlDetail = "INSERT INTO chitietdondathang (MaSP, MaDonDatHang, SL, DonGia, NgayBatDauBH, NgayKetThucBH)
+                            VALUES ($MaSP, $MaDonDatHangID, $SL, $DonGia, '$NgayBatDauBH', '$NgayKetThucBH')";
                 Database::NonQuery($sqlDetail);
             }
 
