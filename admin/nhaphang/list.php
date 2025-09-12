@@ -1,90 +1,151 @@
 <?php include '../header.php'?>
 
+
 <?php
+
+// AJAX: Xem chi tiết phiếu nhập ngay trong file này
+if (isset($_GET['ajax-detail'])) {
+    $MaNhap = (int) $_GET['ajax-detail'];
+
+    $sql = "SELECT ct.MaChiTietNhap, sp.TenSP, ct.SL, ct.GiaNhap, (ct.SL * ct.GiaNhap) AS ThanhTien
+            FROM chitietphieunhap ct
+            JOIN sanpham sp ON ct.MaSP = sp.MaSP
+            WHERE ct.MaNhap = $MaNhap";
+    $details = Database::GetData($sql);
+
+    if ($details) {
+        echo '<table class="table table-bordered table-sm">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Số lượng</th>
+                        <th>Giá nhập</th>
+                        <th>Thành tiền</th>
+                        <th width="100">Công cụ</th>
+                    </tr>
+                </thead>
+                <tbody>';
+        foreach ($details as $d) {
+            echo '<tr>
+                <td>'.$d['TenSP'].'</td>
+                <td>'.$d['SL'].'</td>
+                <td>'.Helper::Currency($d['GiaNhap']).'</td>
+                <td>'.Helper::Currency($d['ThanhTien']).'</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="editDetail('.$d['MaChiTietNhap'].', \''.$d['TenSP'].'\', '.$d['SL'].', '.$d['GiaNhap'].')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="removeDetail('.$d['MaChiTietNhap'].')">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            </tr>';
+        }
+        echo '</tbody></table>';
+    } else {
+        echo '<p class="text-danger">Không có chi tiết phiếu nhập!</p>';
+    }
+
+    exit; // Dừng tại đây, không load HTML bên dưới nữa
+}
+
 // Lấy danh sách sản phẩm và nhà cung cấp
 $products = Database::GetData("SELECT MaSP, TenSP FROM SanPham");
 $nhacungcap = Database::GetData("SELECT MaNCC, TenNCC FROM NhaCungCap");
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-    // Thêm phiếu nhập với nhiều sản phẩm
-    if (isset($_POST['action']) && $_POST['action'] == 'add') {
-        $MaNCC = $_POST['MaNCC'] ?? '';
-        $GhiChu = $_POST['GhiChu'] ?? '';
-        
-        // Lấy danh sách sản phẩm từ form
-        $danhSachSP = $_POST['products'] ?? [];
+   // Thêm phiếu nhập với nhiều sản phẩm
+if (isset($_POST['action']) && $_POST['action'] == 'add') {
+    $MaNCC = $_POST['MaNCC'] ?? '';
+    $GhiChu = $_POST['GhiChu'] ?? '';
+    
+    // Lấy danh sách sản phẩm từ form
+    $danhSachSP = $_POST['products'] ?? [];
 
-        if ($MaNCC && !empty($danhSachSP)) {
-            $hasValidProduct = false;
-            $errors = [];
+    if ($MaNCC && !empty($danhSachSP)) {
+        $hasValidProduct = false;
+        $errors = [];
+        
+        // Kiểm tra từng sản phẩm
+        foreach ($danhSachSP as $index => $product) {
+            $MaSP    = $product['MaSP'] ?? '';
+            $SL      = (int) ($product['SL'] ?? 0);
+            $GiaNhap = (float) ($product['GiaNhap'] ?? 0);
             
-            // Kiểm tra từng sản phẩm
-            foreach ($danhSachSP as $index => $product) {
-                $MaSP = $product['MaSP'] ?? '';
-                $SL = (int) ($product['SL'] ?? 0);
-                $GiaNhap = (float) ($product['GiaNhap'] ?? 0);
-                
-                if ($MaSP && $SL > 0 && $GiaNhap > 0) {
-                    // Kiểm tra giá nhập so với giá bán
-                    $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
-                    if ($GiaNhap >= $giaBan * 0.9) {
-                        $tenSP = Database::GetData("SELECT TenSP FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'TenSP']);
-                        $errors[] = "Sản phẩm '$tenSP': Giá nhập phải nhỏ hơn giá bán ít nhất 10%!";
-                    } else {
-                        $hasValidProduct = true;
-                    }
-                }
-            }
-            
-            if ($hasValidProduct && empty($errors)) {
-                try {
-                    // Bắt đầu transaction
-                    Database::NonQuery("START TRANSACTION");
-                    
-                    // Insert phiếu nhập
-                    Database::NonQuery("INSERT INTO phieunhap (MaNCC, GhiChu) VALUES ($MaNCC, '$GhiChu')");
-                    $MaNhap = Database::GetData("SELECT LAST_INSERT_ID() as id", ['cell'=>'id']);
-                    
-                    // Insert từng chi tiết phiếu nhập
-                    foreach ($danhSachSP as $product) {
-                        $MaSP = $product['MaSP'] ?? '';
-                        $SL = (int) ($product['SL'] ?? 0);
-                        $GiaNhap = (float) ($product['GiaNhap'] ?? 0);
-                        
-                        if ($MaSP && $SL > 0 && $GiaNhap > 0) {
-                            // Kiểm tra lại giá nhập
-                            $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
-                            if ($GiaNhap < $giaBan * 0.9) {
-                                // Insert chi tiết phiếu nhập
-                                Database::NonQuery("INSERT INTO chitietphieunhap (MaNhap, MaSP, SL, GiaNhap) 
-                                                    VALUES ($MaNhap, $MaSP, $SL, $GiaNhap)");
-                                
-                                // Cập nhật số lượng trong bảng SanPham
-                                Database::NonQuery("UPDATE SanPham SET SL = SL + $SL WHERE MaSP = $MaSP");
-                            }
-                        }
-                    }
-                    
-                    // Commit transaction
-                    Database::NonQuery("COMMIT");
-                    
-                    $message = ['type'=>'success','text'=>'Nhập hàng thành công!'];
-                } catch (Exception $e) {
-                    Database::NonQuery("ROLLBACK");
-                    $message = ['type'=>'error','text'=>'Có lỗi xảy ra: ' . $e->getMessage()];
-                }
-            } else {
-                if (!empty($errors)) {
-                    $message = ['type'=>'warning','text'=>implode('<br>', $errors)];
+            if ($MaSP && $SL > 0 && $GiaNhap > 0) {
+                $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
+                if (!$giaBan) {
+                    $errors[] = "Không tìm thấy giá bán cho sản phẩm ID = $MaSP";
+                } elseif ($GiaNhap >= $giaBan) {
+                    $tenSP = Database::GetData("SELECT TenSP FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'TenSP']);
+                    $errors[] = "Sản phẩm '$tenSP': Giá nhập phải nhỏ hơn giá bán!";
                 } else {
-                    $message = ['type'=>'warning','text'=>'Vui lòng nhập ít nhất một sản phẩm hợp lệ!'];
+                    $hasValidProduct = true;
                 }
             }
-        } else {
-            $message = ['type'=>'warning','text'=>'Vui lòng chọn nhà cung cấp và nhập ít nhất một sản phẩm!'];
         }
+        
+        if ($hasValidProduct && empty($errors)) {
+    try {
+        // Bắt đầu transaction
+        Database::NonQuery("START TRANSACTION");
+        
+        // Insert phiếu nhập và lấy ID
+        $MaNhap = Database::NonQueryId("INSERT INTO phieunhap (MaNCC, GhiChu) 
+                                        VALUES ($MaNCC, '$GhiChu')");
+        
+        // Insert chi tiết phiếu nhập
+        foreach ($danhSachSP as $product) {
+            $MaSP    = (int)($product['MaSP'] ?? 0);
+            $SL      = (int)($product['SL'] ?? 0);
+            $GiaNhap = (float)($product['GiaNhap'] ?? 0);
+
+            if ($MaSP && $SL > 0 && $GiaNhap > 0) {
+                // Lấy giá bán của sản phẩm
+                $GiaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP = $MaSP", ['cell' => 'Gia']);
+
+                if ($GiaBan && $GiaNhap < $GiaBan) {
+                    // ✅ Giá nhập hợp lệ → thêm chi tiết phiếu nhập
+                    Database::NonQuery("INSERT INTO chitietphieunhap (MaNhap, MaSP, SL, GiaNhap) 
+                                        VALUES ($MaNhap, $MaSP, $SL, $GiaNhap)");
+
+                    // Cập nhật số lượng tồn kho
+                    Database::NonQuery("UPDATE SanPham SET SL = SL + $SL WHERE MaSP = $MaSP");
+                } else {
+                    // ❌ Giá nhập không hợp lệ → rollback và báo lỗi
+                    Database::NonQuery("ROLLBACK");
+                    $message = [
+                        'type' => 'warning',
+                        'text' => "Sản phẩm ID $MaSP: Giá nhập ($GiaNhap) phải nhỏ hơn giá bán ($GiaBan)!"
+                    ];
+                    return; // Dừng hẳn, không commit
+                }
+            }
+        }
+
+        // Commit transaction
+        Database::NonQuery("COMMIT");
+        
+        $message = ['type' => 'success', 'text' => 'Nhập hàng thành công!'];
+    } catch (Exception $e) {
+        Database::NonQuery("ROLLBACK");
+        $message = ['type' => 'error', 'text' => 'Có lỗi xảy ra: ' . $e->getMessage()];
     }
+
+
+        } else {
+            if (!empty($errors)) {
+                $message = ['type'=>'warning','text'=>implode('<br>', $errors)];
+            } else {
+                $message = ['type'=>'warning','text'=>'Vui lòng nhập ít nhất một sản phẩm hợp lệ!'];
+            }
+        }
+    } else {
+        $message = ['type'=>'warning','text'=>'Vui lòng chọn nhà cung cấp và nhập ít nhất một sản phẩm!'];
+    }
+}
+
 
     // Sửa chi tiết phiếu nhập
     if (isset($_POST['action']) && $_POST['action'] == 'edit') {
@@ -542,8 +603,8 @@ function editDetail(MaChiTietNhap, MaSP, SL, GiaNhap) {
 }
 
 function viewDetails(MaNhap) {
-    // Gọi AJAX để lấy chi tiết phiếu nhập
-    fetch('get_phieunhap_details.php?MaNhap=' + MaNhap)
+    // Gọi AJAX đến chính file hiện tại với tham số MaNhap
+    fetch('?ajax-detail=' + MaNhap)
         .then(response => response.text())
         .then(data => {
             document.getElementById('modal-details-body').innerHTML = data;
@@ -554,4 +615,5 @@ function viewDetails(MaNhap) {
             alert('Có lỗi xảy ra khi tải chi tiết phiếu nhập!');
         });
 }
+
 </script>
