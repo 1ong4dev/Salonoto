@@ -242,7 +242,7 @@
                     $username = $_SESSION['TenTaiKhoan'];
 
                     // Tổng tiền = SUM(SL * Giá)
-                    $sql = "SELECT SUM(GioHang.SL * SanPham.Gia) AS TongTien
+                    $sql = "SELECT SUM(GioHang.SL * IFNULL(SanPham.GiaKhuyenMai, SanPham.Gia)) AS TongTien
                             FROM GioHang
                             INNER JOIN SanPham ON GioHang.MaSP = SanPham.MaSP
                             WHERE GioHang.TenTaiKhoan = '$username'";
