@@ -7,60 +7,125 @@ $nhacungcap = Database::GetData("SELECT MaNCC, TenNCC FROM NhaCungCap");
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-    // Thêm phiếu nhập
+    // Thêm phiếu nhập với nhiều sản phẩm
     if (isset($_POST['action']) && $_POST['action'] == 'add') {
-        $MaSP    = $_POST['MaSP'] ?? '';
-        $SL      = (int) ($_POST['SL'] ?? 0);
-        $MaNCC   = $_POST['MaNCC'] ?? '';
-        $GiaNhap = (float) ($_POST['GiaNhap'] ?? 0);
+        $MaNCC = $_POST['MaNCC'] ?? '';
+        $GhiChu = $_POST['GhiChu'] ?? '';
+        
+        // Lấy danh sách sản phẩm từ form
+        $danhSachSP = $_POST['products'] ?? [];
 
-        if ($MaSP && $SL > 0 && $MaNCC && $GiaNhap > 0) {
-            // Lấy giá bán từ bảng SanPham
-            $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
-            if ($GiaNhap < $giaBan * 0.9) {
-                // Insert phiếu nhập
-                Database::NonQuery("INSERT INTO NhapHang (MaSP, SL, GiaNhap, MaNCC) 
-                                    VALUES ($MaSP, $SL, $GiaNhap, $MaNCC)");
-
-                // Cập nhật kho
-                $exist = Database::GetData("SELECT * FROM Kho WHERE MaSP=$MaSP", ['row'=>0]);
-                if ($exist) {
-                    Database::NonQuery("UPDATE Kho SET SLTon = SLTon + $SL WHERE MaSP=$MaSP");
+        if ($MaNCC && !empty($danhSachSP)) {
+            $hasValidProduct = false;
+            $errors = [];
+            
+            // Kiểm tra từng sản phẩm
+            foreach ($danhSachSP as $index => $product) {
+                $MaSP = $product['MaSP'] ?? '';
+                $SL = (int) ($product['SL'] ?? 0);
+                $GiaNhap = (float) ($product['GiaNhap'] ?? 0);
+                
+                if ($MaSP && $SL > 0 && $GiaNhap > 0) {
+                    // Kiểm tra giá nhập so với giá bán
+                    $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
+                    if ($GiaNhap >= $giaBan * 0.9) {
+                        $tenSP = Database::GetData("SELECT TenSP FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'TenSP']);
+                        $errors[] = "Sản phẩm '$tenSP': Giá nhập phải nhỏ hơn giá bán ít nhất 10%!";
+                    } else {
+                        $hasValidProduct = true;
+                    }
+                }
+            }
+            
+            if ($hasValidProduct && empty($errors)) {
+                try {
+                    // Bắt đầu transaction
+                    Database::NonQuery("START TRANSACTION");
+                    
+                    // Insert phiếu nhập
+                    Database::NonQuery("INSERT INTO phieunhap (MaNCC, GhiChu) VALUES ($MaNCC, '$GhiChu')");
+                    $MaNhap = Database::GetData("SELECT LAST_INSERT_ID() as id", ['cell'=>'id']);
+                    
+                    // Insert từng chi tiết phiếu nhập
+                    foreach ($danhSachSP as $product) {
+                        $MaSP = $product['MaSP'] ?? '';
+                        $SL = (int) ($product['SL'] ?? 0);
+                        $GiaNhap = (float) ($product['GiaNhap'] ?? 0);
+                        
+                        if ($MaSP && $SL > 0 && $GiaNhap > 0) {
+                            // Kiểm tra lại giá nhập
+                            $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
+                            if ($GiaNhap < $giaBan * 0.9) {
+                                // Insert chi tiết phiếu nhập
+                                Database::NonQuery("INSERT INTO chitietphieunhap (MaNhap, MaSP, SL, GiaNhap) 
+                                                    VALUES ($MaNhap, $MaSP, $SL, $GiaNhap)");
+                                
+                                // Cập nhật số lượng trong bảng SanPham
+                                Database::NonQuery("UPDATE SanPham SET SL = SL + $SL WHERE MaSP = $MaSP");
+                            }
+                        }
+                    }
+                    
+                    // Commit transaction
+                    Database::NonQuery("COMMIT");
+                    
+                    $message = ['type'=>'success','text'=>'Nhập hàng thành công!'];
+                } catch (Exception $e) {
+                    Database::NonQuery("ROLLBACK");
+                    $message = ['type'=>'error','text'=>'Có lỗi xảy ra: ' . $e->getMessage()];
+                }
+            } else {
+                if (!empty($errors)) {
+                    $message = ['type'=>'warning','text'=>implode('<br>', $errors)];
                 } else {
-                    Database::NonQuery("INSERT INTO Kho (MaSP, SLTon) VALUES ($MaSP, $SL)");
+                    $message = ['type'=>'warning','text'=>'Vui lòng nhập ít nhất một sản phẩm hợp lệ!'];
                 }
-
-                $message = ['type'=>'success','text'=>'Nhập hàng thành công!'];
-            } else {
-                $message = ['type'=>'warning','text'=>'Giá nhập phải nhỏ hơn giá bán ít nhất 10%!'];
             }
         } else {
-            $message = ['type'=>'warning','text'=>'Vui lòng nhập đầy đủ thông tin hợp lệ!'];
+            $message = ['type'=>'warning','text'=>'Vui lòng chọn nhà cung cấp và nhập ít nhất một sản phẩm!'];
         }
     }
 
-    // Sửa phiếu nhập
+    // Sửa chi tiết phiếu nhập
     if (isset($_POST['action']) && $_POST['action'] == 'edit') {
-        $id      = $_POST['edit_id'] ?? '';
+        $MaChiTietNhap = $_POST['edit_id'] ?? '';
         $MaSP    = $_POST['MaSP'] ?? '';
         $SL      = (int) ($_POST['SL'] ?? 0);
-        $MaNCC   = $_POST['MaNCC'] ?? '';
         $GiaNhap = (float) ($_POST['GiaNhap'] ?? 0);
 
-        if ($id && $MaSP && $SL > 0 && $MaNCC && $GiaNhap > 0) {
+        if ($MaChiTietNhap && $MaSP && $SL > 0 && $GiaNhap > 0) {
             $giaBan = Database::GetData("SELECT Gia FROM SanPham WHERE MaSP=$MaSP", ['cell'=>'Gia']);
             if ($GiaNhap < $giaBan * 0.9) {
-                // Lấy SL cũ
-                $old = Database::GetData("SELECT SL, MaSP FROM NhapHang WHERE MaNhap=$id", ['row'=>0]);
-                if ($old) {
-                    $delta = $SL - $old['SL'];
-                    Database::NonQuery("UPDATE Kho SET SLTon = SLTon + $delta WHERE MaSP={$old['MaSP']}");
+                try {
+                    // Bắt đầu transaction
+                    Database::NonQuery("START TRANSACTION");
+                    
+                    // Lấy thông tin cũ
+                    $old = Database::GetData("SELECT SL, MaSP FROM chitietphieunhap WHERE MaChiTietNhap=$MaChiTietNhap", ['row'=>0]);
+                    if ($old) {
+                        // Hoàn nguyên số lượng cũ
+                        Database::NonQuery("UPDATE SanPham SET SL = SL - {$old['SL']} WHERE MaSP = {$old['MaSP']}");
+                        
+                        // Cập nhật chi tiết phiếu nhập
+                        Database::NonQuery("UPDATE chitietphieunhap 
+                                            SET MaSP=$MaSP, SL=$SL, GiaNhap=$GiaNhap 
+                                            WHERE MaChiTietNhap=$MaChiTietNhap");
+                        
+                        // Cập nhật số lượng mới
+                        Database::NonQuery("UPDATE SanPham SET SL = SL + $SL WHERE MaSP = $MaSP");
+                        
+                        // Commit transaction
+                        Database::NonQuery("COMMIT");
+                        
+                        $message = ['type'=>'success','text'=>'Cập nhật chi tiết phiếu nhập thành công!'];
+                    } else {
+                        Database::NonQuery("ROLLBACK");
+                        $message = ['type'=>'error','text'=>'Không tìm thấy chi tiết phiếu nhập!'];
+                    }
+                } catch (Exception $e) {
+                    Database::NonQuery("ROLLBACK");
+                    $message = ['type'=>'error','text'=>'Có lỗi xảy ra: ' . $e->getMessage()];
                 }
-
-                Database::NonQuery("UPDATE NhapHang 
-                                    SET MaSP=$MaSP, SL=$SL, GiaNhap=$GiaNhap, MaNCC=$MaNCC 
-                                    WHERE MaNhap=$id");
-                $message = ['type'=>'success','text'=>'Cập nhật phiếu nhập thành công!'];
             } else {
                 $message = ['type'=>'warning','text'=>'Giá nhập phải nhỏ hơn giá bán ít nhất 10%!'];
             }
@@ -68,17 +133,52 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $message = ['type'=>'warning','text'=>'Vui lòng nhập đầy đủ thông tin hợp lệ!'];
         }
     }
-} // ✅ đóng if ($_SERVER['REQUEST_METHOD'] == 'POST')
+}
 
-// Xóa phiếu nhập
+// Xóa phiếu nhập (và tất cả chi tiết)
 if (isset($_GET['del-id'])) {
-    $id = $_GET['del-id'];
-    $old = Database::GetData("SELECT MaSP, SL FROM NhapHang WHERE MaNhap=$id", ['row'=>0]);
-    if ($old) {
-        Database::NonQuery("UPDATE Kho SET SLTon = SLTon - {$old['SL']} WHERE MaSP={$old['MaSP']}");
+    $MaNhap = $_GET['del-id'];
+    try {
+        Database::NonQuery("START TRANSACTION");
+        
+        // Lấy tất cả chi tiết để hoàn nguyên số lượng
+        $chiTietList = Database::GetData("SELECT MaSP, SL FROM chitietphieunhap WHERE MaNhap=$MaNhap");
+        foreach ($chiTietList as $chiTiet) {
+            Database::NonQuery("UPDATE SanPham SET SL = SL - {$chiTiet['SL']} WHERE MaSP = {$chiTiet['MaSP']}");
+        }
+        
+        // Xóa chi tiết trước
+        Database::NonQuery("DELETE FROM chitietphieunhap WHERE MaNhap=$MaNhap");
+        // Xóa phiếu nhập
+        Database::NonQuery("DELETE FROM phieunhap WHERE MaNhap=$MaNhap");
+        
+        Database::NonQuery("COMMIT");
+        $message = ['type'=>'success','text'=>'Xóa phiếu nhập thành công!'];
+    } catch (Exception $e) {
+        Database::NonQuery("ROLLBACK");
+        $message = ['type'=>'error','text'=>'Có lỗi xảy ra: ' . $e->getMessage()];
     }
-    Database::NonQuery("DELETE FROM NhapHang WHERE MaNhap=$id");
-    $message = ['type'=>'success','text'=>'Xóa phiếu nhập thành công!'];
+}
+
+// Xóa chi tiết phiếu nhập
+if (isset($_GET['del-detail-id'])) {
+    $MaChiTietNhap = $_GET['del-detail-id'];
+    try {
+        Database::NonQuery("START TRANSACTION");
+        
+        // Lấy thông tin chi tiết để hoàn nguyên số lượng
+        $chiTiet = Database::GetData("SELECT MaSP, SL FROM chitietphieunhap WHERE MaChiTietNhap=$MaChiTietNhap", ['row'=>0]);
+        if ($chiTiet) {
+            Database::NonQuery("UPDATE SanPham SET SL = SL - {$chiTiet['SL']} WHERE MaSP = {$chiTiet['MaSP']}");
+            Database::NonQuery("DELETE FROM chitietphieunhap WHERE MaChiTietNhap=$MaChiTietNhap");
+        }
+        
+        Database::NonQuery("COMMIT");
+        $message = ['type'=>'success','text'=>'Xóa chi tiết phiếu nhập thành công!'];
+    } catch (Exception $e) {
+        Database::NonQuery("ROLLBACK");
+        $message = ['type'=>'error','text'=>'Có lỗi xảy ra: ' . $e->getMessage()];
+    }
 }
 ?>
 
@@ -108,54 +208,80 @@ if (isset($_GET['del-id'])) {
 
         <!-- Modal: Add -->
         <div class="modal fade" id="modal-add" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
                 <form class="modal-content" method="POST">
                     <div class="modal-header bg-primary">
                         <h5 class="modal-title">Thêm phiếu nhập</h5>
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <div class="form-group">
-                            <label>Sản phẩm</label>
-                            <select name="MaSP" class="form-control" required>
-                                <option value="" disabled selected hidden>Chọn sản phẩm</option>
-                                <?php foreach($products as $sp): ?>
-                                    <option value="<?=$sp['MaSP']?>"><?=$sp['TenSP']?></option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Nhà cung cấp <span class="text-danger">*</span></label>
+                                    <select name="MaNCC" class="form-control" required>
+                                        <option value="" disabled selected hidden>Chọn nhà cung cấp</option>
+                                        <?php foreach($nhacungcap as $ncc): ?>
+                                            <option value="<?=$ncc['MaNCC']?>"><?=$ncc['TenNCC']?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Ghi chú</label>
+                                    <textarea name="GhiChu" class="form-control" rows="2" placeholder="Ghi chú về phiếu nhập..."></textarea>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Nhà cung cấp</label>
-                            <select name="MaNCC" class="form-control" required>
-                                <option value="" disabled selected hidden>Chọn nhà cung cấp</option>
-                                <?php foreach($nhacungcap as $ncc): ?>
-                                    <option value="<?=$ncc['MaNCC']?>"><?=$ncc['TenNCC']?></option>
-                                <?php endforeach; ?>
-                            </select>
+
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Danh sách sản phẩm</h6>
+                            <button type="button" class="btn btn-sm btn-success" onclick="addProductRow()">
+                                <i class="fas fa-plus"></i> Thêm sản phẩm
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label>Số lượng</label>
-                            <input type="number" name="SL" class="form-control" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Giá nhập</label>
-                            <input type="number" step="0.01" name="GiaNhap" class="form-control" min="1" required>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="products-table">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th width="35%">Sản phẩm</th>
+                                        <th width="15%">Số lượng</th>
+                                        <th width="20%">Giá nhập</th>
+                                        <th width="20%">Thành tiền</th>
+                                        <th width="10%">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="products-tbody">
+                                    <!-- Dòng sản phẩm sẽ được thêm bằng JavaScript -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-info">
+                                        <td colspan="3" class="text-right"><strong>Tổng cộng:</strong></td>
+                                        <td><strong id="total-amount">0 VNĐ</strong></td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-danger" data-dismiss="modal">Huỷ</button>
-                        <button name="action" value="add" class="btn btn-success">Thêm</button>
+                        <button name="action" value="add" class="btn btn-success" id="btn-submit">Tạo phiếu nhập</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Modal: Edit -->
+        <!-- Modal: Edit Chi tiết -->
         <div class="modal fade" id="modal-edit" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-scrollable" role="document">
                 <form class="modal-content" method="POST">
                     <div class="modal-header bg-primary">
-                        <h5 class="modal-title">Sửa phiếu nhập</h5>
+                        <h5 class="modal-title">Sửa chi tiết phiếu nhập</h5>
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
                     </div>
                     <div class="modal-body">
@@ -166,15 +292,6 @@ if (isset($_GET['del-id'])) {
                                 <option value="" disabled selected hidden>Chọn sản phẩm</option>
                                 <?php foreach($products as $sp): ?>
                                     <option value="<?=$sp['MaSP']?>"><?=$sp['TenSP']?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Nhà cung cấp</label>
-                            <select name="MaNCC" id="edit_MaNCC" class="form-control" required>
-                                <option value="" disabled selected hidden>Chọn nhà cung cấp</option>
-                                <?php foreach($nhacungcap as $ncc): ?>
-                                    <option value="<?=$ncc['MaNCC']?>"><?=$ncc['TenNCC']?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -195,10 +312,28 @@ if (isset($_GET['del-id'])) {
             </div>
         </div>
 
+        <!-- Modal: View Details -->
+        <div class="modal fade" id="modal-details" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-info">
+                        <h5 class="modal-title">Chi tiết phiếu nhập</h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body" id="modal-details-body">
+                        <!-- Nội dung sẽ được load bằng AJAX -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="container-fluid">
             <div class="row my-2 d-flex-end">
                 <button type="button" class="btn btn-success mx-2" data-toggle="modal" data-target="#modal-add">
-                    <i class="fas fa-plus"></i>
+                    <i class="fas fa-plus"></i> Tạo phiếu nhập
                 </button>
                 <form method="GET">
                     <div class="input-group">
@@ -218,13 +353,11 @@ if (isset($_GET['del-id'])) {
                             <thead class="table-warning">
                                 <tr>
                                     <th>Mã Phiếu nhập</th>
-                                    <th>Sản phẩm</th>
                                     <th>Nhà cung cấp</th>
-                                    <th>Số lượng</th>
-                                    <th>Giá nhập</th>
                                     <th>Tổng tiền</th>
                                     <th>Ngày nhập</th>
-                                    <th width="111">Công cụ</th>
+                                    <th>Ghi chú</th>
+                                    <th width="150">Công cụ</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -232,35 +365,35 @@ if (isset($_GET['del-id'])) {
                             $where = '';
                             if (!empty($_GET['keyword'])) {
                                 $kw = addslashes($_GET['keyword']);
-                                $where = "WHERE sp.TenSP LIKE '%$kw%' OR nc.TenNCC LIKE '%$kw%'";
+                                $where = "WHERE nc.TenNCC LIKE '%$kw%' OR pn.GhiChu LIKE '%$kw%'";
                             }
 
-                            $sqlNhap = "SELECT n.MaNhap, n.MaSP, n.MaNCC, sp.TenSP, nc.TenNCC, 
-                                               n.SL, n.GiaNhap, (n.SL*n.GiaNhap) AS TongTien, n.TGNhap
-                                        FROM NhapHang n
-                                        JOIN SanPham sp ON n.MaSP = sp.MaSP
-                                        JOIN NhaCungCap nc ON n.MaNCC = nc.MaNCC
+                            $sqlNhap = "SELECT pn.MaNhap, pn.TGNhap, pn.GhiChu, nc.TenNCC,
+                                               SUM(ct.SL * ct.GiaNhap) AS TongTien
+                                        FROM phieunhap pn
+                                        JOIN nhacungcap nc ON pn.MaNCC = nc.MaNCC
+                                        LEFT JOIN chitietphieunhap ct ON pn.MaNhap = ct.MaNhap
                                         $where
-                                        ORDER BY n.TGNhap DESC";
+                                        GROUP BY pn.MaNhap, pn.TGNhap, pn.GhiChu, nc.TenNCC
+                                        ORDER BY pn.TGNhap DESC";
 
-                            $nhapHang = Database::GetData($sqlNhap);
+                            $phieuNhap = Database::GetData($sqlNhap);
 
-                            if ($nhapHang) {
-                                foreach($nhapHang as $nh) {
+                            if ($phieuNhap) {
+                                foreach($phieuNhap as $pn) {
                                     echo '<tr>
-                                        <td>'.$nh['MaNhap'].'</td>
-                                        <td>'.$nh['TenSP'].'</td>
-                                        <td>'.$nh['TenNCC'].'</td>
-                                        <td>'.$nh['SL'].'</td>
-                                        <td>'.Helper::Currency($nh['GiaNhap']).'</td>
-                                        <td>'.Helper::Currency($nh['TongTien']).'</td>
-                                        <td>'.$nh['TGNhap'].'</td>
+                                        <td>'.$pn['MaNhap'].'</td>
+                                        <td>'.$pn['TenNCC'].'</td>
+                                        <td>'.Helper::Currency($pn['TongTien'] ?? 0).'</td>
+                                        <td>'.$pn['TGNhap'].'</td>
+                                        <td>'.($pn['GhiChu'] ?? '').'</td>
                                         <td>
-                                            <button class="btn btn-warning" 
-                                                onclick="editRow('.$nh['MaNhap'].',\''.$nh['MaSP'].'\',\''.$nh['MaNCC'].'\',\''.$nh['SL'].'\',\''.$nh['GiaNhap'].'\')">
-                                                <i class="fas fa-marker"></i>
+                                            <button class="btn btn-info btn-sm" onclick="viewDetails('.$pn['MaNhap'].')" title="Xem chi tiết">
+                                                <i class="fas fa-eye"></i>
                                             </button>
-                                            <a onclick="removeRow('.$nh['MaNhap'].')" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
+                                            <a onclick="removeRow('.$pn['MaNhap'].')" class="btn btn-danger btn-sm" title="Xóa">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </a>
                                         </td>
                                     </tr>';
                                 }
@@ -279,18 +412,146 @@ if (isset($_GET['del-id'])) {
 <?php include '../footer.php'?>
 
 <script>
+let rowCounter = 0;
+let productData = <?= json_encode($products) ?>;
+
+// Thêm dòng sản phẩm mới
+function addProductRow() {
+    let tbody = document.getElementById('products-tbody');
+    let row = document.createElement('tr');
+    row.id = 'product-row-' + rowCounter;
+    
+    let productOptions = '<option value="">Chọn sản phẩm</option>';
+    productData.forEach(function(product) {
+        productOptions += `<option value="${product.MaSP}">${product.TenSP}</option>`;
+    });
+    
+    row.innerHTML = `
+        <td>
+            <select name="products[${rowCounter}][MaSP]" class="form-control product-select" required onchange="calculateRowTotal(${rowCounter})">
+                ${productOptions}
+            </select>
+        </td>
+        <td>
+            <input type="number" name="products[${rowCounter}][SL]" class="form-control quantity-input" min="1" required onchange="calculateRowTotal(${rowCounter})">
+        </td>
+        <td>
+            <input type="number" name="products[${rowCounter}][GiaNhap]" step="0.01" class="form-control price-input" min="1" required onchange="calculateRowTotal(${rowCounter})">
+        </td>
+        <td>
+            <span class="row-total">0 VNĐ</span>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeProductRow(${rowCounter})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    rowCounter++;
+    
+    // Nếu là dòng đầu tiên, disable nút submit
+    if (tbody.children.length === 1) {
+        document.getElementById('btn-submit').disabled = false;
+    }
+}
+
+// Xóa dòng sản phẩm
+function removeProductRow(index) {
+    let row = document.getElementById('product-row-' + index);
+    if (row) {
+        row.remove();
+        calculateTotal();
+        
+        // Nếu không còn dòng nào, disable nút submit
+        let tbody = document.getElementById('products-tbody');
+        if (tbody.children.length === 0) {
+            document.getElementById('btn-submit').disabled = true;
+        }
+    }
+}
+
+// Tính thành tiền cho từng dòng
+function calculateRowTotal(index) {
+    let row = document.getElementById('product-row-' + index);
+    if (!row) return;
+    
+    let quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+    let price = parseFloat(row.querySelector('.price-input').value) || 0;
+    let total = quantity * price;
+    
+    row.querySelector('.row-total').textContent = formatCurrency(total);
+    calculateTotal();
+}
+
+// Tính tổng cộng
+function calculateTotal() {
+    let total = 0;
+    document.querySelectorAll('#products-tbody tr').forEach(function(row) {
+        let quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+        let price = parseFloat(row.querySelector('.price-input').value) || 0;
+        total += quantity * price;
+    });
+    
+    document.getElementById('total-amount').textContent = formatCurrency(total);
+}
+
+// Format tiền tệ
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN', { 
+        style: 'currency', 
+        currency: 'VND' 
+    }).format(amount);
+}
+
+// Khởi tạo khi mở modal
+$('#modal-add').on('shown.bs.modal', function () {
+    let tbody = document.getElementById('products-tbody');
+    tbody.innerHTML = ''; // Xóa hết các dòng cũ
+    rowCounter = 0;
+    addProductRow(); // Thêm dòng đầu tiên
+    document.getElementById('btn-submit').disabled = false;
+});
+
+// Reset form khi đóng modal
+$('#modal-add').on('hidden.bs.modal', function () {
+    document.getElementById('products-tbody').innerHTML = '';
+    document.getElementById('total-amount').textContent = '0 VNĐ';
+    rowCounter = 0;
+});
+
 function removeRow(id) {
-    if(confirm('Bạn có chắc chắn muốn xoá không?')) {
+    if(confirm('Bạn có chắc chắn muốn xoá phiếu nhập này không? Tất cả chi tiết sẽ bị xóa!')) {
         window.location = '?del-id='+id;
     }
 }
 
-function editRow(id, MaSP, MaNCC, SL, GiaNhap) {
-    document.getElementById('edit_id').value = id;
+function removeDetail(id) {
+    if(confirm('Bạn có chắc chắn muốn xoá chi tiết này không?')) {
+        window.location = '?del-detail-id='+id;
+    }
+}
+
+function editDetail(MaChiTietNhap, MaSP, SL, GiaNhap) {
+    document.getElementById('edit_id').value = MaChiTietNhap;
     document.getElementById('edit_MaSP').value = MaSP;
-    document.getElementById('edit_MaNCC').value = MaNCC;
     document.getElementById('edit_SL').value = SL;
     document.getElementById('edit_GiaNhap').value = GiaNhap;
     $('#modal-edit').modal('show');
+}
+
+function viewDetails(MaNhap) {
+    // Gọi AJAX để lấy chi tiết phiếu nhập
+    fetch('get_phieunhap_details.php?MaNhap=' + MaNhap)
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('modal-details-body').innerHTML = data;
+            $('#modal-details').modal('show');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi tải chi tiết phiếu nhập!');
+        });
 }
 </script>
