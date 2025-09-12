@@ -16,7 +16,6 @@ if ((isset($_GET['id']) || isset($_POST['MaSP']))) {
     $maSP = isset($_GET['id']) ? $_GET['id'] : $_POST['MaSP'];
     $SL = isset($_POST['SL']) ? intval($_POST['SL']) : 1;
 
-    // Lấy số lượng hiện tại trong SanPham
     $sql = "SELECT SL FROM SanPham WHERE MaSP = '$maSP'";
     $SLSanPham = Database::GetData($sql, ['cell' => 'SL']);
 
@@ -25,7 +24,6 @@ if ((isset($_GET['id']) || isset($_POST['MaSP']))) {
         exit;
     }
 
-    // Lấy số lượng hiện tại trong giỏ hàng
     $sql = "SELECT SL FROM GioHang WHERE MaSP = '$maSP' AND TenTaiKhoan = '$username'";
     $currentSL = Database::GetData($sql, ['cell' => 'SL']);
 
@@ -40,7 +38,7 @@ if ((isset($_GET['id']) || isset($_POST['MaSP']))) {
     Database::NonQuery($sql);
 }
 
-// Cập nhật số lượng sản phẩm trong giỏ hàng
+// Cập nhật số lượng sản phẩm trong giỏ hàng (Ajax gọi vào chính file này)
 if (isset($_POST['update_amount'])) {
     $MaSP = $_POST['MaSP'];
     $SL = intval($_POST['SL']);
@@ -52,6 +50,23 @@ if (isset($_POST['update_amount'])) {
     $sql = "UPDATE GioHang SET SL = $SL, UpdatedAt = NOW(3) 
             WHERE MaSP = '$MaSP' AND TenTaiKhoan = '$username'";
     Database::NonQuery($sql);
+
+    // Trả về tổng tiền mới để cập nhật giao diện
+    $sql = "SELECT g.MaSP, IFNULL(s.GiaKhuyenMai, s.Gia) AS Gia, g.SL
+            FROM GioHang g
+            INNER JOIN SanPham s ON g.MaSP = s.MaSP
+            WHERE g.TenTaiKhoan = '$username'";
+    $cartsAjax = Database::GetData($sql);
+
+    $totalMoneyAjax = 0;
+    if ($cartsAjax) {
+        foreach ($cartsAjax as $c) {
+            $totalMoneyAjax += $c['Gia'] * $c['SL'];
+        }
+    }
+
+    echo $totalMoneyAjax;
+    exit;
 }
 
 // Xóa sản phẩm khỏi giỏ hàng
@@ -62,14 +77,14 @@ if (isset($_GET['del-cart-id'])) {
 }
 
 // Lấy danh sách sản phẩm trong giỏ hàng
-    $sql = "SELECT g.MaSP, s.TenSP, s.HinhAnh, 
-                IFNULL(s.GiaKhuyenMai, s.Gia) AS Gia,  
-                s.SL AS SLSanPham, g.SL
-            FROM GioHang g
-            INNER JOIN SanPham s ON g.MaSP = s.MaSP
-            WHERE g.TenTaiKhoan = '$username'
-            ORDER BY g.UpdatedAt DESC";
-    $carts = Database::GetData($sql);
+$sql = "SELECT g.MaSP, s.TenSP, s.HinhAnh, 
+            IFNULL(s.GiaKhuyenMai, s.Gia) AS Gia,  
+            s.SL AS SLSanPham, g.SL
+        FROM GioHang g
+        INNER JOIN SanPham s ON g.MaSP = s.MaSP
+        WHERE g.TenTaiKhoan = '$username'
+        ORDER BY g.UpdatedAt DESC";
+$carts = Database::GetData($sql);
 
 // Tính tổng tiền
 $totalMoney = 0;
@@ -97,54 +112,53 @@ if ($carts) {
     <div class="container">
         <div class="product-content-right">
             <div class="woocommerce">
-                <form method="post" action="#">
-                    <table cellspacing="0" class="shop_table cart">
-                        <thead>
-                            <tr>
-                                <th>Mã sản phẩm</th>
-                                <th>Tên sản phẩm</th>
-                                <th>Ảnh</th>
-                                <th>Giá</th>
-                                <th width="125">Số lượng</th>
-                                <th>Thành tiền</th>
-                                <th>Xoá</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ($carts): ?>
-                                <?php foreach ($carts as $cart): ?>
-                                    <tr class="cart_item">
-                                        <td><?= $cart['MaSP'] ?></td>
-                                        <td><?= $cart['TenSP'] ?></td>
-                                        <td class="product-thumbnail">
-                                            <img class="shop_thumbnail" src="<?= $cart['HinhAnh'] ?>" style="width:80px; height:auto;">
-                                        </td>
-                                        <td><?= Helper::Currency($cart['Gia']) ?></td>
-                                        <td>
-                                            <div class="quantity buttons_added">
-                                                <input name="MaSP" value="<?= $cart['MaSP'] ?>" hidden>
-                                                <input name="SL" type="number" size="4" class="input-text qty text" 
-                                                       min="1" max="<?= $cart['SLSanPham'] ?>" 
-                                                       value="<?= min($cart['SL'], $cart['SLSanPham']) ?>">
-                                            </div>
-                                        </td>
-                                        <td><?= Helper::Currency($cart['Gia'] * $cart['SL']) ?></td>
-                                        <td><a class="remove" href="?del-cart-id=<?= $cart['MaSP'] ?>">×</a></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <tr>
-                                    <td colspan="6" class="actions">
-                                        <a href="order.php" class="btn btn-lg btn-success">Tạo đơn hàng</a>
+                <table cellspacing="0" class="shop_table cart">
+                    <thead>
+                        <tr>
+                            <th>Mã sản phẩm</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Ảnh</th>
+                            <th>Giá</th>
+                            <th width="125">Số lượng</th>
+                            <th>Thành tiền</th>
+                            <th>Xoá</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($carts): ?>
+                            <?php foreach ($carts as $cart): ?>
+                                <tr class="cart_item" data-price="<?= $cart['Gia'] ?>">
+                                    <td><?= $cart['MaSP'] ?></td>
+                                    <td><?= $cart['TenSP'] ?></td>
+                                    <td class="product-thumbnail">
+                                        <img class="shop_thumbnail" src="<?= $cart['HinhAnh'] ?>" style="width:80px; height:auto;">
                                     </td>
+                                    <td><?= Helper::Currency($cart['Gia']) ?></td>
+                                    <td>
+                                        <div class="quantity buttons_added">
+                                            <input type="number" 
+                                                   class="input-text qty text quantity-input"
+                                                   min="1" max="<?= $cart['SLSanPham'] ?>"
+                                                   value="<?= min($cart['SL'], $cart['SLSanPham']) ?>"
+                                                   data-masp="<?= $cart['MaSP'] ?>">
+                                        </div>
+                                    </td>
+                                    <td class="row-total"><?= Helper::Currency($cart['Gia'] * $cart['SL']) ?></td>
+                                    <td><a class="remove" href="?del-cart-id=<?= $cart['MaSP'] ?>">×</a></td>
                                 </tr>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="7" class="text-danger text-center">Giỏ hàng trống!</td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </form>
+                            <?php endforeach; ?>
+                            <tr>
+                                <td colspan="7" class="text-right">
+                                    <a href="order.php" class="btn btn-lg btn-success">Tạo đơn hàng</a>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="7" class="text-danger text-center">Giỏ hàng trống!</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
 
                 <div class="cart-collaterals">
                     <div class="cart_totals">
@@ -153,7 +167,7 @@ if ($carts) {
                             <tbody>
                                 <tr class="cart-subtotal">
                                     <th>Tổng đơn hàng:</th>
-                                    <td><span class="amount"><?= number_format($totalMoney) ?> đ</span></td>
+                                    <td><span class="amount" id="subtotal"><?= number_format($totalMoney) ?> đ</span></td>
                                 </tr>
                                 <tr class="shipping">
                                     <th>Vận chuyển:</th>
@@ -161,7 +175,7 @@ if ($carts) {
                                 </tr>
                                 <tr class="order-total">
                                     <th>Tổng tiền:</th>
-                                    <td><strong><span class="amount"><?= number_format($totalMoney) ?> đ</span></strong></td>
+                                    <td><strong><span class="amount" id="total"><?= number_format($totalMoney) ?> đ</span></strong></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -172,5 +186,33 @@ if ($carts) {
         </div>
     </div>
 </div>
+
+<script>
+document.querySelectorAll('.quantity-input').forEach(input => {
+    input.addEventListener('input', function() {
+        let row = this.closest('tr');
+        let price = parseFloat(row.getAttribute('data-price'));
+        let qty = parseInt(this.value) || 0;
+        let rowTotal = price * qty;
+
+        // cập nhật tổng tiền từng dòng
+        row.querySelector('.row-total').innerText = rowTotal.toLocaleString('vi-VN') + ' đ';
+
+        // gọi Ajax để lưu DB + cập nhật tổng tiền
+        let masp = this.getAttribute('data-masp');
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", "cart.php", true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                let newTotal = parseInt(xhr.responseText) || 0;
+                document.getElementById('subtotal').innerText = newTotal.toLocaleString('vi-VN') + ' đ';
+                document.getElementById('total').innerText = newTotal.toLocaleString('vi-VN') + ' đ';
+            }
+        };
+        xhr.send("update_amount=1&MaSP=" + masp + "&SL=" + qty);
+    });
+});
+</script>
 
 <?php include 'footer.php' ?>
