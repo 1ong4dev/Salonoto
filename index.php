@@ -1,30 +1,25 @@
- <?php include 'header.php'?>
+<?php 
+include 'header.php'; // Đảm bảo header.php include Database.php và session_start()
+?>
+
 <div class="slider-area">
     <!-- Slider -->
     <div class="block-slider block-slider4">
-        <ul class="" id="bxslider-home4">
-                <?php
-                $sql = 'SELECT * FROM quangcao WHERE TinhTrang = 1';
-                $quangcaoData = Database::GetData($sql);
-
-                if ($quangcaoData) {
-                    foreach ($quangcaoData as $qc) {
-                        echo '<li>
-                                <img src="' . $qc['AnhQC'] . '" alt="Slide">
-                                <!-- 
-                                <div class="caption-group">
-                                    <h2 class="caption title">' . $qc['TenQC'] . '</h2>
-                                    <h4 class="caption subtitle">' . $qc['MoTa'] . '</h4>
-                                </div> 
-                                -->
-                            </li>';
-                    }
+        <ul id="bxslider-home4">
+            <?php
+            $quangcaoData = Database::GetData("SELECT * FROM quangcao WHERE TinhTrang = 1");
+            if ($quangcaoData) {
+                foreach ($quangcaoData as $qc) {
+                    echo '<li>
+                            <img src="' . htmlspecialchars($qc['AnhQC']) . '" alt="Slide">
+                        </li>';
                 }
-                ?>
+            }
+            ?>
         </ul>
     </div>
     <!-- ./Slider -->
-</div> <!-- End slider area -->
+</div>
 
 <div class="promo-area">
     <div class="zigzag-bottom"></div>
@@ -56,7 +51,7 @@
             </div>
         </div>
     </div>
-</div> <!-- End promo area -->
+</div>
 
 <div class="maincontent-area">
     <div class="zigzag-bottom"></div>
@@ -67,47 +62,48 @@
                     <h2 class="section-title">Sản phẩm mới nhất</h2>
                     <div class="product-carousel">
                         <?php
-                            $sql = 'SELECT * FROM SanPham ORDER BY UpdatedAt LIMIT 5';
-                            $SanPham = Database::GetData($sql);
+                        // Lấy 5 sản phẩm mới nhất từ sanpham, có SL > 0
+                        $SanPham = Database::GetData("SELECT * FROM sanpham ORDER BY UpdatedAt DESC LIMIT 5");
+                        if ($SanPham) {
                             foreach ($SanPham as $sp) {
-                            ?>
+                        ?>
                         <div class="single-product">
                             <div class="product-f-image">
-                                <img src="<?=$sp['HinhAnh']?>" alt="">
+                                <img src="<?= htmlspecialchars($sp['HinhAnh']) ?>" alt="<?= htmlspecialchars($sp['TenSP']) ?>">
                                 <div class="product-hover">
-    <?php 
-        if (isset($_SESSION['MaQuyen']) && $_SESSION['MaQuyen'] == 3) {
-            // Lấy tồn kho hiện tại của sản phẩm
-            $sqlStock = "SELECT SLTon FROM Kho WHERE MaSP = '" . $sp['MaSP'] . "'";
-            $SLTon = Database::GetData($sqlStock, ['cell' => 'SLTon']);
-
-            // Chỉ hiện nút Thêm vào giỏ nếu còn tồn kho > 0
-            if ($SLTon && $SLTon > 0) { 
-    ?>
-                <a href="/Salonoto/cart.php?id=<?= $sp['MaSP'] ?>" class="add-to-cart-link">
-                    <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
-                </a>
-    <?php 
-            } 
-        } 
-    ?>
-    <a href="<?='/Salonoto/details.php?id=' . $sp['MaSP']?>" class="view-details-link">
-        <i class="fa fa-link"></i> Chi tiết
-    </a>
-</div>
-
+                                    <?php 
+                                    if (isset($_SESSION['MaQuyen']) && $_SESSION['MaQuyen'] == 3) {
+                                        if ($sp['SL'] > 0) { // Dùng SL trực tiếp từ sanpham
+                                    ?>
+                                        <a href="/Salonoto/cart.php?id=<?= $sp['MaSP'] ?>" class="add-to-cart-link">
+                                            <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
+                                        </a>
+                                    <?php 
+                                        }
+                                    } 
+                                    ?>
+                                    <a href="/Salonoto/details.php?id=<?= $sp['MaSP'] ?>" class="view-details-link">
+                                        <i class="fa fa-link"></i> Chi tiết
+                                    </a>
+                                </div>
                             </div>
-                            <h2><a href="<?='/Salonoto/details.php?id=' . $sp['MaSP']?>"><?=$sp['TenSP']?></a></h2>
+                            <h2><a href="/Salonoto/details.php?id=<?= $sp['MaSP'] ?>"><?= htmlspecialchars($sp['TenSP']) ?></a></h2>
                             <div class="product-carousel-price">
-                                <ins><?=Helper::Currency($sp['Gia'])?></ins>
+                                <ins><?= Helper::Currency($sp['Gia']) ?></ins>
+                                <?php if ($sp['GiaKhuyenMai'] > 0): ?>
+                                    <del><?= Helper::Currency($sp['GiaKhuyenMai']) ?></del>
+                                <?php endif; ?>
                             </div>
                         </div>
-                        <?php }?>
+                        <?php
+                            }
+                        }
+                        ?>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div> <!-- End main content area -->
-<?php include 'footer.php'?>
-<!-- test -->
+</div>
+
+<?php include 'footer.php'; ?>
