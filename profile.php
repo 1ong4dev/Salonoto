@@ -230,7 +230,7 @@ function ServiceStatusBadge($status) {
                         <?php foreach ($services as $svc): ?>
                         <tr>
                             <td><?=$svc['MaDatDichVu']?></td>
-                            <td><?=$svc['DongXe']?></td>
+                            <td><?=$svc['ModelXe']?></td>
                             <td><?=$svc['BienSoXe']?></td>
                             <td><?=date('d-m-Y H:i', strtotime($svc['NgayDat']))?></td>
                             <td><?=date('d-m-Y H:i', strtotime($svc['NgayHen']))?></td>
