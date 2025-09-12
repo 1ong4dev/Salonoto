@@ -1,9 +1,11 @@
 <?php include '../header.php'?>
 
 <?php
+// =======================
 // Xử lý Xác nhận / Từ chối
+// =======================
 if (isset($_GET['action']) && isset($_GET['MaDatDichVu'])) {
-    $MaDatDichVu = $_GET['MaDatDichVu'];
+    $MaDatDichVu = intval($_GET['MaDatDichVu']);
     $action = $_GET['action'];
 
     if ($action == 'confirm') {
@@ -13,19 +15,25 @@ if (isset($_GET['action']) && isset($_GET['MaDatDichVu'])) {
     }
 }
 
+// =======================
 // Xử lý Hoàn thành
+// =======================
 if (isset($_GET['complete']) && isset($_GET['MaDatDichVu'])) {
-    $MaDatDichVu = $_GET['MaDatDichVu'];
+    $MaDatDichVu = intval($_GET['MaDatDichVu']);
     Database::NonQuery("UPDATE datdichvu SET TrangThai='DaHoanThanh' WHERE MaDatDichVu=$MaDatDichVu");
 }
 
+// =======================
 // Xử lý Hủy
+// =======================
 if (isset($_GET['cancel']) && isset($_GET['MaDatDichVu'])) {
-    $MaDatDichVu = $_GET['MaDatDichVu'];
+    $MaDatDichVu = intval($_GET['MaDatDichVu']);
     Database::NonQuery("UPDATE datdichvu SET TrangThai='Huy' WHERE MaDatDichVu=$MaDatDichVu");
 }
 
+// =======================
 // Hàm hiển thị badge trạng thái
+// =======================
 function ServiceOrderStatusBadge($status) {
     switch($status){
         case 'ChoXuLy': return '<span class="badge bg-warning">Chờ xử lý</span>';
@@ -63,7 +71,8 @@ function ServiceOrderStatusBadge($status) {
             <div class="row my-2 d-flex-end">
                 <form method="GET">
                     <div class="input-group">
-                        <input type="text" name="keyword" placeholder="Từ khoá" class="form-control" value="<?=isset($_GET['keyword'])?htmlspecialchars($_GET['keyword']):''?>">
+                        <input type="text" name="keyword" placeholder="Từ khoá" class="form-control" 
+                               value="<?=isset($_GET['keyword'])?htmlspecialchars($_GET['keyword']):''?>">
                         <div class="input-group-append">
                             <button class="btn btn-outline-info"><i class="fas fa-search"></i></button>
                         </div>
@@ -81,7 +90,7 @@ function ServiceOrderStatusBadge($status) {
                                     <th>Mã đặt dịch vụ</th>
                                     <th>Tài khoản</th>
                                     <th>Họ tên</th>
-                                    <th>Dòng xe</th>
+                                    <th>Model xe</th>
                                     <th>Biển số</th>
                                     <th>Dịch vụ</th>
                                     <th>Ngày đặt</th>
@@ -93,25 +102,37 @@ function ServiceOrderStatusBadge($status) {
                             </thead>
                             <tbody>
                                 <?php
-                                $page = isset($_GET['page']) ? $_GET['page'] : 1;
+                                $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
                                 $pager = (new Pagination())->get('datdichvu', $page, ROW_OF_PAGE);
 
-                                $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : '';
+                                $keyword = isset($_GET['keyword']) ? addslashes($_GET['keyword']) : '';
                                 $where = '';
                                 if ($keyword) {
-                                    $keyword = addslashes($keyword);
                                     $where = "WHERE ddv.MaDatDichVu LIKE '%$keyword%' 
                                               OR ddv.TenTaiKhoan LIKE '%$keyword%' 
                                               OR ddv.BienSoXe LIKE '%$keyword%' 
-                                              OR ddv.DongXe LIKE '%$keyword%'";
+                                              OR ddv.ModelXe LIKE '%$keyword%'";
                                 }
 
+                                // ✅ Query dùng MySQL GROUP_CONCAT
                                 $sql = "
-                                    SELECT ddv.*, u.TenDayDu, dv.TenDichVu
+                                    SELECT 
+                                        ddv.MaDatDichVu,
+                                        ddv.TenTaiKhoan,
+                                        u.TenDayDu,
+                                        ddv.ModelXe,
+                                        ddv.BienSoXe,
+                                        ddv.NgayDat,
+                                        ddv.NgayHen,
+                                        ddv.TrangThai,
+                                        ddv.GhiChu,
+                                        GROUP_CONCAT(CONCAT(dv.TenDichVu, ' (', ct.Gia, 'đ)') SEPARATOR ', ') AS DanhSachDichVu
                                     FROM datdichvu ddv
                                     JOIN users u ON ddv.TenTaiKhoan = u.TenTaiKhoan
-                                    JOIN dichvu dv ON ddv.MaDichVu = dv.MaDichVu
+                                    LEFT JOIN datdichvu_chitiet ct ON ddv.MaDatDichVu = ct.MaDatDichVu
+                                    LEFT JOIN dichvu dv ON ct.MaDichVu = dv.MaDichVu
                                     $where
+                                    GROUP BY ddv.MaDatDichVu
                                     ORDER BY ddv.NgayDat DESC
                                     LIMIT " . $pager['StartIndex'] . ", " . ROW_OF_PAGE;
 
@@ -123,9 +144,9 @@ function ServiceOrderStatusBadge($status) {
                                             <th>'.$order['MaDatDichVu'].'</th>
                                             <td>'.$order['TenTaiKhoan'].'</td>
                                             <td>'.$order['TenDayDu'].'</td>
-                                            <td>'.$order['DongXe'].'</td>
+                                            <td>'.$order['ModelXe'].'</td>
                                             <td>'.$order['BienSoXe'].'</td>
-                                            <td>'.$order['TenDichVu'].'</td>
+                                            <td>'.htmlspecialchars($order['DanhSachDichVu']).'</td>
                                             <td>'.Helper::DateTime($order['NgayDat']).'</td>
                                             <td>'.Helper::DateTime($order['NgayHen']).'</td>
                                             <td>'.ServiceOrderStatusBadge($order['TrangThai']).'</td>
@@ -133,8 +154,12 @@ function ServiceOrderStatusBadge($status) {
                                             <td>';
                                         
                                         if ($order['TrangThai'] == 'ChoXuLy') {
-                                            echo '<a href="?action=confirm&MaDatDichVu='.$order['MaDatDichVu'].'" class="btn btn-success btn-sm" title="Xác nhận"><i class="fas fa-check"></i></a> ';
-                                            echo '<a href="?action=reject&MaDatDichVu='.$order['MaDatDichVu'].'" class="btn btn-danger btn-sm" title="Từ chối"><i class="fas fa-times"></i></a>';
+                                            echo '<a href="?action=confirm&MaDatDichVu='.$order['MaDatDichVu'].'" 
+                                                     class="btn btn-success btn-sm" title="Xác nhận">
+                                                     <i class="fas fa-check"></i></a> ';
+                                            echo '<a href="?action=reject&MaDatDichVu='.$order['MaDatDichVu'].'" 
+                                                     class="btn btn-danger btn-sm" title="Từ chối">
+                                                     <i class="fas fa-times"></i></a>';
                                         } elseif ($order['TrangThai'] == 'XacNhan') {
                                             // Nút Hoàn thành
                                             echo '<a href="?complete=1&MaDatDichVu='.$order['MaDatDichVu'].'" 
@@ -169,7 +194,8 @@ function ServiceOrderStatusBadge($status) {
                     <?php
                     for($i=1;$i<=$pager['TotalPages'];$i++){
                         $active = $page==$i?'active':'';
-                        echo '<li class="page-item '.$active.'"><a class="page-link" href="?page='.$i.'">'.$i.'</a></li>';
+                        echo '<li class="page-item '.$active.'">
+                                <a class="page-link" href="?page='.$i.'">'.$i.'</a></li>';
                     }
                     ?>
                 </ul>
