@@ -62,6 +62,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="../kiemkho/list.php" class="nav-link">
+                        <i class="nav-icon fas fa-warehouse"></i>
+                        <p>Kiểm kho </p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="../nhaphang/list.php" class="nav-link">
                         <i class="nav-icon fas fa-truck"></i>
                         <p>Nhập hàng</p>

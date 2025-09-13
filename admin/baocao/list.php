@@ -285,5 +285,22 @@ new Chart(document.getElementById('chartStock').getContext('2d'), {
   options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
 });
 </script>
+<!-- Thêm sau các script Chart.js -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
+<script>
+$(document).ready(function(){
+    // Khi load page, check URL hash
+    var hash = window.location.hash;
+    if(hash) {
+        $('#reportTabs a[href="' + hash + '"]').tab('show');
+    }
+
+    // Khi click tab, update URL hash
+    $('#reportTabs a').on('shown.bs.tab', function(e){
+        window.location.hash = e.target.hash;
+    });
+});
+</script>
 <?php include '../footer.php' ?>
