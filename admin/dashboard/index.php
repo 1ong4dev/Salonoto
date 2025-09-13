@@ -1,6 +1,4 @@
 <?php include '../header.php'?>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <?php include '../sidebar.php'?>
 
 <div class="content-wrapper">
@@ -26,80 +24,127 @@
     <section class="content">
         <div class="container-fluid">
             <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header bg-primary">
-                            <h4>Tổng số đơn hàng đã hoàn thành theo năm</h4>
+
+                <?php
+                // Lấy tổng số đơn hàng
+                $totalOrders = Database::GetData("SELECT COUNT(*) AS total FROM dondathang", ['row'=>0])['total'];
+
+                // Lấy tổng số sản phẩm
+                $totalProducts = Database::GetData("SELECT COUNT(*) AS total FROM sanpham", ['row'=>0])['total'];
+
+                // Lấy tổng số loại sản phẩm
+                $totalCategories = Database::GetData("SELECT COUNT(*) AS total FROM loaisp", ['row'=>0])['total'];
+
+                // Lấy tổng số người dùng
+                $totalUsers = Database::GetData("SELECT COUNT(*) AS total FROM users", ['row'=>0])['total'];
+
+                // Lấy tổng số lịch đặt dịch vụ
+                $totalBookings = Database::GetData("SELECT COUNT(*) AS total FROM datdichvu", ['row'=>0])['total'];
+
+                // Lấy tổng số dịch vụ
+                $totalServices = Database::GetData("SELECT COUNT(*) AS total FROM dichvu", ['row'=>0])['total'];
+                ?>
+
+                <!-- Card Đơn hàng -->
+                <div class="col-lg-4 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3><?= $totalOrders ?></h3>
+                            <p>Tổng số đơn hàng</p>
                         </div>
-                        <div class="card-body">
-                            <canvas id="ordersOfYear"></canvas>
+                        <div class="icon">
+                            <i class="fas fa-shopping-cart"></i>
                         </div>
+                        <a href="/Salonoto/admin/donhang/list.php" class="small-box-footer">
+                            Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                        </a>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header bg-primary">
-                            <h4>Doanh thu từ đơn hàng đã hoàn thành theo năm</h4>
+
+                <!-- Card Sản phẩm -->
+                <div class="col-lg-4 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3><?= $totalProducts ?></h3>
+                            <p>Tổng số sản phẩm</p>
                         </div>
-                        <div class="card-body">
-                            <canvas id="moneyOfYear"></canvas>
+                        <div class="icon">
+                            <i class="fas fa-box"></i>
                         </div>
+                        <a href="/Salonoto/admin/sanpham/list.php" class="small-box-footer">
+                            Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                        </a>
                     </div>
                 </div>
+
+                <!-- Card Loại sản phẩm -->
+                <div class="col-lg-4 col-6">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h3><?= $totalCategories ?></h3>
+                            <p>Tổng số loại sản phẩm</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <a href="/Salonoto/admin/loaisp/list.php" class="small-box-footer">
+                            Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card Người dùng -->
+                <div class="col-lg-4 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3><?= $totalUsers ?></h3>
+                            <p>Tổng số người dùng</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <a href="/Salonoto/admin/users/list.php" class="small-box-footer">
+                            Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card Lịch đặt dịch vụ -->
+                <div class="col-lg-4 col-6">
+                    <div class="small-box bg-primary">
+                        <div class="inner">
+                            <h3><?= $totalBookings ?></h3>
+                            <p>Tổng số lịch đặt dịch vụ</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <a href="/Salonoto/admin/dondichvu/list.php" class="small-box-footer">
+                            Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card Dịch vụ -->
+                <div class="col-lg-4 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3><?= $totalServices ?></h3>
+                            <p>Tổng số dịch vụ</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <a href="/Salonoto/admin/dichvu/list.php" class="small-box-footer">
+                            Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
     <!-- /.content -->
-
-<?php
-// Lấy dữ liệu chỉ từ các đơn đã hoàn thành
-$sql = "SELECT MONTH(CreatedAt) AS Month, COUNT(*) AS Number, SUM(TongTien) AS Money 
-        FROM dondathang 
-        WHERE TrangThai='DaHoanThanh'
-        GROUP BY MONTH(CreatedAt)";
-$datas = Database::GetData($sql);
-
-// Khởi tạo mảng 12 tháng
-$ordersOfYearValue = array_fill(0, 12, 0);
-$moneyOfYearValue  = array_fill(0, 12, 0);
-
-foreach ($datas as $data) {
-    $ordersOfYearValue[$data['Month'] - 1] = $data['Number'];
-    $moneyOfYearValue[$data['Month'] - 1]  = $data['Money'];
-}
-?>
-
-<script>
-const data = {
-    labels: ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
-             "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"],
-    datasets: [{
-        label: 'Tổng số đơn hàng',
-        data: <?= json_encode($ordersOfYearValue) ?>,
-        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-        borderColor: 'rgb(54, 162, 235)',
-        borderWidth: 1
-    }]
-};
-
-const data1 = {
-    labels: ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
-             "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"],
-    datasets: [{
-        label: 'Doanh thu',
-        data: <?= json_encode($moneyOfYearValue) ?>,
-        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-        borderColor: 'rgb(255, 159, 64)',
-        borderWidth: 1
-    }]
-};
-
-const configOrders = { type: 'bar', data: data, options: { scales: { y: { beginAtZero: true } } } };
-const configMoney  = { type: 'bar', data: data1, options: { scales: { y: { beginAtZero: true } } } };
-
-new Chart(document.getElementById("ordersOfYear"), configOrders);
-new Chart(document.getElementById("moneyOfYear"), configMoney);
-</script>
 </div>
 
 <?php include '../footer.php'?>
