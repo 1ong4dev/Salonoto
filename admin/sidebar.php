@@ -74,6 +74,12 @@
                     </a>
                 </li> 
                 <li class="nav-item">
+                    <a href="../xuathang/list.php" class="nav-link">
+                        <i class="nav-icon fas fa-arrow-right"></i>
+                        <p>Xuất hàng</p>
+                    </a>
+                </li> 
+                <li class="nav-item">
                     <a href="../dichvu/list.php" class="nav-link">
                         <i class="nav-icon fas fa-star"></i>
                         <p>Dịch vụ</p>

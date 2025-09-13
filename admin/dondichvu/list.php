@@ -16,19 +16,53 @@ if (isset($_GET['action']) && isset($_GET['MaDatDichVu'])) {
 }
 
 // =======================
-// Xử lý Hoàn thành
+// Xử lý Hoàn thành và tạo hóa đơn
 // =======================
 if (isset($_GET['complete']) && isset($_GET['MaDatDichVu'])) {
     $MaDatDichVu = intval($_GET['MaDatDichVu']);
-    Database::NonQuery("UPDATE datdichvu SET TrangThai='DaHoanThanh' WHERE MaDatDichVu=$MaDatDichVu");
-}
+    $conn = Database::BeginTransaction();
 
-// =======================
-// Xử lý Hủy
-// =======================
-if (isset($_GET['cancel']) && isset($_GET['MaDatDichVu'])) {
-    $MaDatDichVu = intval($_GET['MaDatDichVu']);
-    Database::NonQuery("UPDATE datdichvu SET TrangThai='Huy' WHERE MaDatDichVu=$MaDatDichVu");
+    try {
+        // 1. Cập nhật trạng thái đơn dịch vụ
+        Database::NonQueryTrans($conn, "UPDATE datdichvu SET TrangThai='DaHoanThanh' WHERE MaDatDichVu=$MaDatDichVu");
+
+        // 2. Lấy thông tin TenTaiKhoan từ datdichvu
+        $order = Database::GetData("SELECT TenTaiKhoan FROM datdichvu WHERE MaDatDichVu=$MaDatDichVu", ['row'=>0]);
+        if (!$order) throw new Exception("Không tìm thấy tài khoản cho đơn dịch vụ $MaDatDichVu");
+        $TenTaiKhoan = $order['TenTaiKhoan'];
+
+        // 3. Lấy chi tiết dịch vụ và tính tổng tiền
+        $services = Database::GetData("SELECT MaDichVu, Gia FROM datdichvu_chitiet WHERE MaDatDichVu=$MaDatDichVu");
+        $tongTien = 0;
+        if ($services) {
+            foreach ($services as $s) $tongTien += $s['Gia'];
+        }
+
+        // 4. Tạo hóa đơn dịch vụ và lưu TenTaiKhoan
+        $MaHoaDon = Database::NonQueryIdTrans($conn, "
+            INSERT INTO hoadondichvu (MaDatDichVu, TenTaiKhoan, TongTien)
+            VALUES ($MaDatDichVu, '$TenTaiKhoan', $tongTien)
+        ");
+
+        // 5. Tạo chi tiết hóa đơn
+        if ($services) {
+            foreach ($services as $s) {
+                $dv = Database::GetData("SELECT TenDichVu FROM dichvu WHERE MaDichVu={$s['MaDichVu']}", ['row'=>0]);
+                $tenDV_SQL = $dv ? "'".addslashes($dv['TenDichVu'])."'" : "NULL";
+
+                Database::NonQueryTrans($conn, "
+                    INSERT INTO chitiethoadondichvu (MaHoaDonDichVu, TenDichVu, Gia)
+                    VALUES ($MaHoaDon, $tenDV_SQL, {$s['Gia']})
+                ");
+            }
+        }
+
+        // Commit transaction
+        Database::Commit($conn);
+    } catch (Exception $e) {
+        Database::Rollback($conn);
+        die("Lỗi khi tạo hóa đơn: " . $e->getMessage());
+    }
 }
 
 // =======================
@@ -114,7 +148,6 @@ function ServiceOrderStatusBadge($status) {
                                               OR ddv.ModelXe LIKE '%$keyword%'";
                                 }
 
-                                // ✅ Query dùng MySQL GROUP_CONCAT
                                 $sql = "
                                     SELECT 
                                         ddv.MaDatDichVu,
@@ -134,7 +167,7 @@ function ServiceOrderStatusBadge($status) {
                                     $where
                                     GROUP BY ddv.MaDatDichVu
                                     ORDER BY ddv.NgayDat DESC
-                                    LIMIT " . $pager['StartIndex'] . ", " . ROW_OF_PAGE;
+                                    LIMIT ".$pager['StartIndex'].", ".ROW_OF_PAGE;
 
                                 $orders = Database::GetData($sql);
 
@@ -161,16 +194,12 @@ function ServiceOrderStatusBadge($status) {
                                                      class="btn btn-danger btn-sm" title="Từ chối">
                                                      <i class="fas fa-times"></i></a>';
                                         } elseif ($order['TrangThai'] == 'XacNhan') {
-                                            // Nút Hoàn thành
                                             echo '<a href="?complete=1&MaDatDichVu='.$order['MaDatDichVu'].'" 
                                                     class="btn btn-primary btn-sm" title="Hoàn thành">
                                                     <i class="fas fa-check-circle"></i></a>';
-
-                                            // Nút Hủy
                                             echo '<a href="?cancel=1&MaDatDichVu='.$order['MaDatDichVu'].'" 
                                                     class="btn btn-warning btn-sm" title="Hủy">
                                                     <i class="fas fa-times-circle"></i></a>';
-
                                         } else {
                                             echo '<span class="text-muted">Đã xử lý</span>';
                                         }
@@ -194,8 +223,7 @@ function ServiceOrderStatusBadge($status) {
                     <?php
                     for($i=1;$i<=$pager['TotalPages'];$i++){
                         $active = $page==$i?'active':'';
-                        echo '<li class="page-item '.$active.'">
-                                <a class="page-link" href="?page='.$i.'">'.$i.'</a></li>';
+                        echo '<li class="page-item '.$active.'"><a class="page-link" href="?page='.$i.'">'.$i.'</a></li>';
                     }
                     ?>
                 </ul>

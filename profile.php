@@ -29,6 +29,52 @@ foreach ($orders as &$order) {
     ");
 }
 
+// Xử lý hủy dịch vụ
+
+if (isset($_GET['cancelService'])) {
+    $MaDatDichVu = intval($_GET['cancelService']);
+
+    // Lấy trạng thái hiện tại
+    $service = Database::GetData("SELECT TrangThai FROM datdichvu WHERE MaDatDichVu=$MaDatDichVu", ['row'=>0]);
+
+    if ($service && ($service['TrangThai'] == 'ChoXuLy' || $service['TrangThai'] == 'XacNhan')) {
+        // Cập nhật trạng thái thành Huy
+        if (Database::NonQuery("UPDATE datdichvu SET TrangThai='Huy' WHERE MaDatDichVu=$MaDatDichVu")) {
+            echo "<script>alert('Dịch vụ đã được hủy!'); window.location='".$_SERVER['PHP_SELF']."';</script>";
+            exit;
+        } else {
+            echo "<script>alert('Có lỗi khi hủy dịch vụ, vui lòng thử lại!'); window.location='".$_SERVER['PHP_SELF']."';</script>";
+            exit;
+        }
+    } else {
+        echo "<script>alert('Dịch vụ này không thể hủy!'); window.location='".$_SERVER['PHP_SELF']."';</script>";
+        exit;
+    }
+}
+
+// Xử lý hủy đơn hàng
+
+if (isset($_GET['cancelOrder'])) {
+    $MaDonDatHang = intval($_GET['cancelOrder']);
+
+    // Lấy trạng thái hiện tại
+    $order = Database::GetData("SELECT TrangThai FROM dondathang WHERE MaDonDatHang=$MaDonDatHang", ['row'=>0]);
+
+    if ($order && $order['TrangThai'] == 'ChoXuLy') {
+        // Cập nhật trạng thái thành Huy
+        if (Database::NonQuery("UPDATE dondathang SET TrangThai='Huy' WHERE MaDonDatHang=$MaDonDatHang")) {
+            echo "<script>alert('Đơn hàng đã được hủy!'); window.location='".$_SERVER['PHP_SELF']."';</script>";
+            exit;
+        } else {
+            echo "<script>alert('Có lỗi khi hủy đơn hàng, vui lòng thử lại!'); window.location='".$_SERVER['PHP_SELF']."';</script>";
+            exit;
+        }
+    } else {
+        echo "<script>alert('Đơn hàng này không thể hủy!'); window.location='".$_SERVER['PHP_SELF']."';</script>";
+        exit;
+    }
+}
+
 $alert = "";
 $alert1 = "";
 
@@ -88,15 +134,48 @@ if (isset($_POST['submit'])) {
 
 
 // Lấy lịch sử dịch vụ
-$services = Database::GetData("SELECT * FROM datdichvu WHERE TenTaiKhoan='" . $_SESSION['TenTaiKhoan'] . "' ORDER BY NgayDat DESC");
+$servicesRaw = Database::GetData("
+    SELECT dc.MaDatDichVu, dc.NgayDat, dc.NgayHen, dc.TrangThai, dc.ModelXe, dc.BienSoXe,
+           dct.Gia, dv.TenDichVu
+    FROM datdichvu_chitiet dct
+    INNER JOIN dichvu dv ON dct.MaDichVu = dv.MaDichVu
+    INNER JOIN datdichvu dc ON dct.MaDatDichVu = dc.MaDatDichVu
+    WHERE dc.TenTaiKhoan = '" . $_SESSION['TenTaiKhoan'] . "'
+    ORDER BY dc.NgayHen DESC
+");
+
+// Gom chi tiết theo từng dịch vụ và tính tổng tiền
+$services = [];
+foreach ($servicesRaw as $item) {
+    $id = $item['MaDatDichVu'];
+    if (!isset($services[$id])) {
+        $services[$id] = [
+            'MaDatDichVu' => $id,
+            'NgayDat' => $item['NgayDat'],
+            'NgayHen' => $item['NgayHen'],
+            'TrangThai' => $item['TrangThai'],
+            'ModelXe' => $item['ModelXe'],
+            'BienSoXe' => $item['BienSoXe'],
+            'TongTien' => 0,
+            'ChiTiet' => []
+        ];
+    }
+    $services[$id]['ChiTiet'][] = [
+        'TenDichVu' => $item['TenDichVu'],
+        'Gia' => $item['Gia']
+    ];
+    $services[$id]['TongTien'] += $item['Gia'];
+}
+$services = array_values($services);
 
 function OrderStatusBadge($status) {
     switch ($status) {
         case 'ChoXuLy': return '<span class="badge bg-warning">Chờ xử lý</span>';
+        case 'XacNhan': return '<span class="badge bg-info">Xác nhận </span>';
         case 'DangGiaoHang': return '<span class="badge bg-info">Đang giao hàng</span>';
         case 'DaHoanThanh': return '<span class="badge bg-success">Đã hoàn thành</span>';
         case 'Huy': return '<span class="badge bg-danger">Hủy</span>';
-        case 'HoanHang': return '<span class="badge bg-info">Hoàn hàng</span>';
+        case 'HoanHang': return '<span class="badge bg-danger">Hoàn hàng</span>';
         default: return '<span class="badge bg-secondary">Không xác định</span>';
     }
 }
@@ -198,6 +277,16 @@ function ServiceStatusBadge($status) {
                                 <i class="fas fa-print"></i>
                             </a>
                         <?php endif; ?>
+
+                        <!-- Nút hủy chỉ hiển thị khi đang chờ xử lý -->
+                        <?php if ($order['TrangThai'] == 'ChoXuLy'): ?>
+                            <a href="?cancelOrder=<?=$order['MaDonDatHang']?>" 
+                            class="btn btn-danger btn-sm" 
+                            onclick="return confirm('Bạn có chắc muốn hủy đơn hàng này?');"
+                            title="Hủy đơn hàng">
+                            <i class="fas fa-times"></i>
+                            </a>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -223,7 +312,7 @@ function ServiceStatusBadge($status) {
                             <th>Ngày đặt</th>
                             <th>Ngày hẹn</th>
                             <th>Trạng thái</th>
-                            <th>Ghi chú</th>
+                            <th>Công cụ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -235,7 +324,26 @@ function ServiceStatusBadge($status) {
                             <td><?=date('d-m-Y H:i', strtotime($svc['NgayDat']))?></td>
                             <td><?=date('d-m-Y H:i', strtotime($svc['NgayHen']))?></td>
                             <td><?=ServiceStatusBadge($svc['TrangThai'])?></td>
-                            <td><?=$svc['GhiChu']?></td>
+                            <td>
+                                <!-- Nút xem chi tiết dịch vụ -->
+                                <button class="btn btn-info btn-sm" title="Xem chi tiết"
+                                    onclick="showServiceDetail('<?=$svc['MaDatDichVu']?>')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+
+                                <!-- Nút hủy dịch vụ nếu trạng thái cho phép -->
+                                <?php if ($svc['TrangThai'] == 'ChoXuLy' || $svc['TrangThai'] == 'XacNhan'): ?>
+                                    <a href="?cancelService=<?=$svc['MaDatDichVu']?>" 
+                                    class="btn btn-danger btn-sm" 
+                                    onclick="return confirm('Bạn có chắc muốn hủy dịch vụ này?');"
+                                    title="Hủy dịch vụ">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                <?php else: ?>
+                                    <span class="text-muted"></span>
+                                <?php endif; ?>
+                            </td>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -268,6 +376,25 @@ function ServiceStatusBadge($status) {
         </div>
     </div>
 </div>
+<!-- Modal chi tiết dịch vụ -->
+<div class="modal fade" id="modal-service-detail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title">Chi tiết dịch vụ</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="service-detail-body">
+                <!-- Nội dung chi tiết sẽ được JS populate -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 const orders = <?=json_encode($orders)?>;
@@ -282,11 +409,11 @@ function showOrderDetail(orderId) {
     html += `<table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>Sản phẩm</th>
-                        <th>Số lượng</th>
-                        <th>Giá</th>
-                        <th>Mã Giảm Giá</th>
-                        <th>Giảm Giá</th>
+                        <th>Mã dịch vụ</th>
+                        <th>Xe</th>
+                        <th>Biển số</th>
+                        <th>Mã giảm giá</th>
+                        <th>Giảm</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -313,7 +440,37 @@ function showOrderDetail(orderId) {
     document.getElementById('order-detail-body').innerHTML = html;
     $('#modal-order-detail').modal('show');
 }
+const services = <?=json_encode($services)?>;
+
+function showServiceDetail(serviceId) {
+    const svc = services.find(s => s.MaDatDichVu == serviceId);
+    if (!svc) return;
+
+    let html = `<p><b>Mã đặt dịch vụ:</b> ${svc.MaDatDichVu}</p>`;
+    html += `<p><b>Ngày hẹn:</b> ${new Date(svc.NgayHen).toLocaleString()}</p>`;
+    html += `<p><b>Tổng tiền:</b> ${parseFloat(svc.TongTien).toLocaleString()} đ</p>`;
+
+    html += `<table class="table table-bordered mt-2">
+                <thead>
+                    <tr>
+                        <th>Tên dịch vụ</th>
+                        <th>Giá</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+    svc.ChiTiet.forEach(item => {
+        html += `<tr>
+                    <td>${item.TenDichVu}</td>
+                    <td>${parseFloat(item.Gia).toLocaleString()} đ</td>
+                 </tr>`;
+    });
+    html += `</tbody></table>`;
+
+    document.getElementById('service-detail-body').innerHTML = html;
+    $('#modal-service-detail').modal('show');
+}
 </script>
 
 </body>
 </html>
+<!-- 123 -->

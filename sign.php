@@ -105,6 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                     <?=isset($loginMessage) ? $loginMessage : ''?>
                     <input name="SignIn" type="submit" value="Đăng nhập" class="btn solid" />
+                    <div class="form-group text-center">
+                        <a href="forgot-password.php">Quên mật khẩu?</a>
+                    </div>
                 </form>
 
                 <!-- Đăng ký -->
