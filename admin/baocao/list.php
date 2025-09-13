@@ -24,9 +24,11 @@
         <!-- Doanh thu bán hàng -->
         <div class="tab-pane fade show active" id="sales" role="tabpanel">
           <?php
-          // Thống kê doanh thu và đơn hàng
+          // Thống kê doanh thu và đơn hàng từ bảng thanhtoan
           $sqlSales = "
-            SELECT DATE_FORMAT(NgayTT, '%Y-%m') AS Thang, SUM(TongTien) AS DoanhThu, COUNT(*) AS SoDon
+            SELECT DATE_FORMAT(NgayTT, '%Y-%m') AS Thang, 
+                   SUM(TongTien) AS DoanhThu, 
+                   COUNT(*) AS SoDon
             FROM thanhtoan
             WHERE TrangThaiTT = 'HoanTat'
             GROUP BY DATE_FORMAT(NgayTT, '%Y-%m')
@@ -60,30 +62,27 @@
           $percentRevenue = $dtThangTruoc > 0 ? round((($dtThang - $dtThangTruoc) / $dtThangTruoc) * 100, 1) : 0;
 
           // Hàm hiển thị mũi tên rích rắc SVG
-         
-function zigzagArrow($percent) {
-  if ($percent > 0) {
-    return "<span class='text-success'>
-      <svg width='500' height='60' xmlns='http://www.w3.org/2000/svg'>
-        <polyline points='5,55 60,30 120,45 180,20 240,40 300,10 360,35 420,15 480,1'
-                  stroke='green' stroke-width='3' fill='none'/>
-      </svg>
-      +{$percent}%
-    </span>";
-  } elseif ($percent < 0) {
-    return "<span class='text-danger'>
-      <svg width='500' height='60' xmlns='http://www.w3.org/2000/svg'>
-        <polyline points='5,5 60,30 120,15 180,40 240,20 300,55 360,25 420,45 480,70'
-                  stroke='red' stroke-width='3' fill='none'/>
-      </svg>
-      {$percent}%
-    </span>";
-  } else {
-    return "<span class='text-muted'>0%</span>";
-  }
-}
-
-
+          function zigzagArrow($percent) {
+            if ($percent > 0) {
+              return "<span class='text-success'>
+                <svg width='500' height='60' xmlns='http://www.w3.org/2000/svg'>
+                  <polyline points='5,55 60,30 120,45 180,20 240,40 300,10 360,35 420,15 480,1'
+                            stroke='green' stroke-width='3' fill='none'/>
+                </svg>
+                +{$percent}%
+              </span>";
+            } elseif ($percent < 0) {
+              return "<span class='text-danger'>
+                <svg width='500' height='60' xmlns='http://www.w3.org/2000/svg'>
+                  <polyline points='5,5 60,30 120,15 180,40 240,20 300,55 360,25 420,45 480,70'
+                            stroke='red' stroke-width='3' fill='none'/>
+                </svg>
+                {$percent}%
+              </span>";
+            } else {
+              return "<span class='text-muted'>0%</span>";
+            }
+          }
           ?>
           
           <div class="row">
@@ -121,21 +120,25 @@ function zigzagArrow($percent) {
         <!-- Dịch vụ -->
         <div class="tab-pane fade" id="service" role="tabpanel">
           <?php
+          // Sửa lại query cho phù hợp với cấu trúc CSDL
           $services = Database::GetData("
             SELECT dv.TenDichVu, COUNT(ddv.MaDatDichVu) AS SoLuong
             FROM datdichvu ddv
-            JOIN dichvu dv ON ddv.MaDichVu = dv.MaDichVu
+            JOIN datdichvu_chitiet ddvct ON ddv.MaDatDichVu = ddvct.MaDatDichVu
+            JOIN dichvu dv ON ddvct.MaDichVu = dv.MaDichVu
             WHERE ddv.TrangThai = 'DaHoanThanh'
-            GROUP BY dv.TenDichVu
+            GROUP BY dv.MaDichVu, dv.TenDichVu
             ORDER BY SoLuong DESC
           ");
           ?>
           <table class="table table-bordered table-striped">
             <thead class="table-warning"><tr><th>Dịch vụ</th><th>Số lần đặt</th></tr></thead>
             <tbody>
-              <?php foreach($services as $s): ?>
+              <?php if($services): foreach($services as $s): ?>
                 <tr><td><?=$s['TenDichVu']?></td><td><?=$s['SoLuong']?></td></tr>
-              <?php endforeach; ?>
+              <?php endforeach; else: ?>
+                <tr><td colspan="2" class="text-center">Không có dữ liệu</td></tr>
+              <?php endif; ?>
             </tbody>
           </table>
           <canvas id="chartService" height="100"></canvas>
@@ -151,7 +154,7 @@ function zigzagArrow($percent) {
             JOIN dondathang dh ON ct.MaDonDatHang = dh.MaDonDatHang
             JOIN thanhtoan tt ON dh.MaDonDatHang = tt.MaDonDatHang
             WHERE tt.TrangThaiTT = 'HoanTat'
-            GROUP BY sp.TenSP
+            GROUP BY sp.MaSP, sp.TenSP
             ORDER BY TongBan DESC
             LIMIT 10
           ");
@@ -159,9 +162,11 @@ function zigzagArrow($percent) {
           <table class="table table-bordered table-striped">
             <thead class="table-info"><tr><th>Sản phẩm</th><th>Số lượng bán</th></tr></thead>
             <tbody>
-              <?php foreach($products as $p): ?>
+              <?php if($products): foreach($products as $p): ?>
                 <tr><td><?=$p['TenSP']?></td><td><?=$p['TongBan']?></td></tr>
-              <?php endforeach; ?>
+              <?php endforeach; else: ?>
+                <tr><td colspan="2" class="text-center">Không có dữ liệu</td></tr>
+              <?php endif; ?>
             </tbody>
           </table>
           <canvas id="chartProduct" height="100"></canvas>
@@ -170,11 +175,13 @@ function zigzagArrow($percent) {
         <!-- Nhập hàng -->
         <div class="tab-pane fade" id="import" role="tabpanel">
           <?php
+          // Sửa lại query dựa trên cấu trúc bảng phieunhap và chitietphieunhap
           $imports = Database::GetData("
-            SELECT sp.TenSP, SUM(nh.SL) AS TongSL, SUM(nh.SL*nh.GiaNhap) AS TongTien
-            FROM nhaphang nh
-            JOIN sanpham sp ON nh.MaSP = sp.MaSP
-            GROUP BY sp.TenSP
+            SELECT sp.TenSP, SUM(ctn.SL) AS TongSL, SUM(ctn.SL * ctn.GiaNhap) AS TongTien
+            FROM chitietphieunhap ctn
+            JOIN sanpham sp ON ctn.MaSP = sp.MaSP
+            JOIN phieunhap pn ON ctn.MaNhap = pn.MaNhap
+            GROUP BY sp.MaSP, sp.TenSP
             ORDER BY TongSL DESC
             LIMIT 10
           ");
@@ -182,9 +189,11 @@ function zigzagArrow($percent) {
           <table class="table table-bordered table-striped">
             <thead class="table-secondary"><tr><th>Sản phẩm</th><th>Tổng số lượng nhập</th><th>Tổng tiền nhập</th></tr></thead>
             <tbody>
-              <?php foreach($imports as $i): ?>
+              <?php if($imports): foreach($imports as $i): ?>
                 <tr><td><?=$i['TenSP']?></td><td><?=$i['TongSL']?></td><td><?=Helper::Currency($i['TongTien'])?></td></tr>
-              <?php endforeach; ?>
+              <?php endforeach; else: ?>
+                <tr><td colspan="3" class="text-center">Không có dữ liệu</td></tr>
+              <?php endif; ?>
             </tbody>
           </table>
           <canvas id="chartImport" height="100"></canvas>
@@ -193,14 +202,15 @@ function zigzagArrow($percent) {
         <!-- Tồn kho -->
         <div class="tab-pane fade" id="stock" role="tabpanel">
           <?php
+          // Sửa lại query tồn kho - dựa trên bảng sanpham (có cột SL là số lượng tồn)
           $stocks = Database::GetData("
-            SELECT sp.MaSP, sp.TenSP, k.SLTon, 
+            SELECT sp.MaSP, sp.TenSP, sp.SL AS SLTon, 
                    GROUP_CONCAT(DISTINCT nc.TenNCC SEPARATOR ', ') AS NhaCungCap
-            FROM SanPham sp
-            LEFT JOIN Kho k ON sp.MaSP = k.MaSP
-            LEFT JOIN NhapHang nh ON sp.MaSP = nh.MaSP
-            LEFT JOIN NhaCungCap nc ON nh.MaNCC = nc.MaNCC
-            GROUP BY sp.MaSP, sp.TenSP, k.SLTon
+            FROM sanpham sp
+            LEFT JOIN chitietphieunhap ctn ON sp.MaSP = ctn.MaSP
+            LEFT JOIN phieunhap pn ON ctn.MaNhap = pn.MaNhap
+            LEFT JOIN nhacungcap nc ON pn.MaNCC = nc.MaNCC
+            GROUP BY sp.MaSP, sp.TenSP, sp.SL
             ORDER BY sp.TenSP ASC
           ");
           ?>
@@ -212,7 +222,7 @@ function zigzagArrow($percent) {
                   <td><?=$st['MaSP']?></td>
                   <td><?=$st['TenSP']?></td>
                   <td><?=$st['SLTon']?></td>
-                  <td><?=$st['NhaCungCap']?></td>
+                  <td><?=$st['NhaCungCap'] ?? 'N/A'?></td>
                 </tr>
               <?php endforeach; else: ?>
                 <tr><td colspan="4" class="text-center">Không có dữ liệu</td></tr>
@@ -229,66 +239,93 @@ function zigzagArrow($percent) {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // Biểu đồ doanh thu
-new Chart(document.getElementById('chartSales').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: [<?php foreach($sales as $r) echo "'".$r['Thang']."',"; ?>],
-    datasets: [{
-      label: 'Doanh thu',
-      data: [<?php foreach($sales as $r) echo $r['DoanhThu'].","; ?>],
-      backgroundColor: 'rgba(54, 162, 235, 0.6)'
-    }]
-  },
-  options: {responsive: true, plugins: {legend:{display:false}}, scales:{y:{beginAtZero:true}} }
-});
+const salesData = [<?php foreach($sales as $r) echo $r['DoanhThu'].","; ?>];
+const salesLabels = [<?php foreach($sales as $r) echo "'".$r['Thang']."',"; ?>];
 
-// Dịch vụ
-new Chart(document.getElementById('chartService').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: [<?php foreach($services as $s) echo "'".$s['TenDichVu']."',"; ?>],
-    datasets: [{ label: 'Số lần đặt', data: [<?php foreach($services as $s) echo $s['SoLuong'].","; ?>], backgroundColor: 'rgba(75, 192, 192, 0.6)' }]
-  },
-  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-});
+if (salesLabels.length > 0) {
+  new Chart(document.getElementById('chartSales').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: salesLabels,
+      datasets: [{
+        label: 'Doanh thu',
+        data: salesData,
+        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+      }]
+    },
+    options: {responsive: true, plugins: {legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+  });
+}
 
-// Sản phẩm bán chạy
-new Chart(document.getElementById('chartProduct').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: [<?php foreach($products as $p) echo "'".$p['TenSP']."',"; ?>],
-    datasets: [{ label: 'Số lượng bán', data: [<?php foreach($products as $p) echo $p['TongBan'].","; ?>], backgroundColor: 'rgba(255, 99, 132, 0.6)' }]
-  },
-  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-});
+// Biểu đồ dịch vụ123
+const serviceData = [<?php foreach($services as $s) echo $s['SoLuong'].","; ?>];
+const serviceLabels = [<?php foreach($services as $s) echo "'".$s['TenDichVu']."',"; ?>];
 
-// Nhập hàng
-new Chart(document.getElementById('chartImport').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: [<?php foreach($imports as $i) echo "'".$i['TenSP']."',"; ?>],
-    datasets: [
-      { label: 'Số lượng nhập', data: [<?php foreach($imports as $i) echo $i['TongSL'].","; ?>], backgroundColor: 'rgba(54, 162, 235, 0.6)' },
-      { label: 'Tổng tiền nhập', data: [<?php foreach($imports as $i) echo $i['TongTien'].","; ?>], backgroundColor: 'rgba(255, 206, 86, 0.6)' }
-    ]
-  },
-  options: { responsive: true, scales: { y: { beginAtZero: true } } }
-});
+if (serviceLabels.length > 0) {
+  new Chart(document.getElementById('chartService').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: serviceLabels,
+      datasets: [{ label: 'Số lần đặt', data: serviceData, backgroundColor: 'rgba(75, 192, 192, 0.6)' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+}
 
-// Tồn kho 123
-new Chart(document.getElementById('chartStock').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: [<?php foreach($stocks as $st) echo "'".$st['TenSP']."',"; ?>],
-    datasets: [{ label: 'Số lượng tồn', data: [<?php foreach($stocks as $st) echo $st['SLTon'].","; ?>], backgroundColor: 'rgba(153, 102, 255, 0.6)' }]
-  },
-  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-});
+// Biểu đồ sản phẩm bán chạy
+const productData = [<?php foreach($products as $p) echo $p['TongBan'].","; ?>];
+const productLabels = [<?php foreach($products as $p) echo "'".$p['TenSP']."',"; ?>];
+
+if (productLabels.length > 0) {
+  new Chart(document.getElementById('chartProduct').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: productLabels,
+      datasets: [{ label: 'Số lượng bán', data: productData, backgroundColor: 'rgba(255, 99, 132, 0.6)' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+}
+
+// Biểu đồ nhập hàng
+const importQtyData = [<?php foreach($imports as $i) echo $i['TongSL'].","; ?>];
+const importAmountData = [<?php foreach($imports as $i) echo $i['TongTien'].","; ?>];
+const importLabels = [<?php foreach($imports as $i) echo "'".$i['TenSP']."',"; ?>];
+
+if (importLabels.length > 0) {
+  new Chart(document.getElementById('chartImport').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: importLabels,
+      datasets: [
+        { label: 'Số lượng nhập', data: importQtyData, backgroundColor: 'rgba(54, 162, 235, 0.6)' },
+        { label: 'Tổng tiền nhập', data: importAmountData, backgroundColor: 'rgba(255, 206, 86, 0.6)' }
+      ]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+  });
+}
+
+// Biểu đồ tồn kho
+const stockData = [<?php foreach($stocks as $st) echo $st['SLTon'].","; ?>];
+const stockLabels = [<?php foreach($stocks as $st) echo "'".$st['TenSP']."',"; ?>];
+
+if (stockLabels.length > 0) {
+  new Chart(document.getElementById('chartStock').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: stockLabels,
+      datasets: [{ label: 'Số lượng tồn', data: stockData, backgroundColor: 'rgba(153, 102, 255, 0.6)' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+}
 </script>
 <!-- Thêm sau các script Chart.js -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
+<<<<<<< HEAD
 <script>
 $(document).ready(function(){
     // Khi load page, check URL hash
@@ -303,4 +340,6 @@ $(document).ready(function(){
     });
 });
 </script>
+=======
+>>>>>>> b0c6895249ba1a81bf9647ebcc50bb329f07451e
 <?php include '../footer.php' ?>
