@@ -215,14 +215,14 @@
           ");
           ?>
           <table class="table table-bordered table-striped">
-            <thead class="table-dark text-white"><tr><th>Mã SP</th><th>Tên SP</th><th>Số lượng tồn</th><th>Nhà cung cấp</th></tr></thead>
+            <thead class="table-dark text-white"><tr><th>Mã SP</th><th>Tên SP</th><th>Số lượng tồn</th></tr></thead>
             <tbody>
               <?php if($stocks): foreach($stocks as $st): ?>
                 <tr>
                   <td><?=$st['MaSP']?></td>
                   <td><?=$st['TenSP']?></td>
                   <td><?=$st['SLTon']?></td>
-                  <td><?=$st['NhaCungCap'] ?? 'N/A'?></td>
+                  <!-- <td><?=$st['NhaCungCap'] ?? 'N/A'?></td> -->
                 </tr>
               <?php endforeach; else: ?>
                 <tr><td colspan="4" class="text-center">Không có dữ liệu</td></tr>
