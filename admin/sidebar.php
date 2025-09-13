@@ -50,35 +50,47 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="../kho/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-warehouse"></i>
-                        <p>Quản lý kho</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../nhacungcap/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-boxes"></i>
-                        <p>Nhà cung cấp</p>
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a href="../sanpham/list.php" class="nav-link">
                         <i class="nav-icon fas fa-car"></i>
                         <p>Sản phẩm</p>
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="../kho/list.php" class="nav-link">
+                        <i class="nav-icon fas fa-warehouse"></i>
+                        <p>Quản lý kho</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="../nhaphang/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-arrow-right"></i>
+                        <i class="nav-icon fas fa-truck"></i>
                         <p>Nhập hàng</p>
                     </a>
                 </li> 
                 <li class="nav-item">
                     <a href="../xuathang/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-arrow-right"></i>
+                        <i class="nav-icon fas fa-arrow-up"></i>
                         <p>Xuất hàng</p>
                     </a>
                 </li> 
+                <li class="nav-item">
+                    <a href="../nhacungcap/list.php" class="nav-link">
+                        <i class="nav-icon fas fa-building"></i>
+                        <p>Nhà cung cấp</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../donhang/list.php" class="nav-link">
+                        <i class="nav-icon fas fa-file-invoice"></i>
+                        <p>Đơn hàng</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../thanhtoan/list.php" class="nav-link">
+                        <i class="nav-icon fas fa-credit-card "></i>
+                        <p>Thanh toán</p>
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a href="../dichvu/list.php" class="nav-link">
                         <i class="nav-icon fas fa-star"></i>
@@ -87,32 +99,20 @@
                 </li> 
                 <li class="nav-item">
                     <a href="../dondichvu/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-check"></i>
+                        <i class="nav-icon fas fa-calendar-check"></i>
                         <p>Đơn đặt dịch vụ</p>
                     </a>
                 </li> 
                 <li class="nav-item">
-                    <a href="../thanhtoan/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-credit-card "></i>
-                        <p>Thanh toán</p>
-                    </a>
-                </li>             
-                <li class="nav-item">
-                    <a href="../donhang/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-truck-loading "></i>
-                        <p>Đơn hàng</p>
+                    <a href="../users/list.php" class="nav-link">
+                        <i class="nav-icon fas fa-user-circle"></i>
+                        <p>Tài khoản</p>
                     </a>
                 </li>
                    <li class="nav-item">
                     <a href="../khuyenmai/list.php" class="nav-link">
                         <i class="nav-icon fas fa-tags "></i>
                         <p>Khuyến Mãi</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../users/list.php" class="nav-link">
-                        <i class="nav-icon fas fa-user-circle"></i>
-                        <p>Tài khoản</p>
                     </a>
                 </li>
                 <li class="nav-item">

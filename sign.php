@@ -154,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <p>Nếu bạn chưa có tài khoản. Hãy tạo ngay một tài khoản và tham gia cùng chúng tôi nào!</p>
                     <button class="btn transparent" id="sign-up-btn">Đăng ký</button>
                 </div>
-                <img src="./assets/img/log1.png" class="image" alt="" />
+                <img src="./assets/img/login1.png" class="image" alt="" />
             </div>
 
             <div class="panel right-panel">

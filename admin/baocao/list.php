@@ -190,33 +190,28 @@ function zigzagArrow($percent) {
           <canvas id="chartImport" height="100"></canvas>
         </div>
 
+        <!-- Tồn kho -->
         <div class="tab-pane fade" id="stock" role="tabpanel">
           <?php
           $stocks = Database::GetData("
-              SELECT sp.MaSP, sp.TenSP, sp.SL, 
-                    GROUP_CONCAT(DISTINCT nc.TenNCC SEPARATOR ', ') AS NhaCungCap
-              FROM SanPham sp
-              LEFT JOIN NhapHang nh ON sp.MaSP = nh.MaSP
-              LEFT JOIN NhaCungCap nc ON nh.MaNCC = nc.MaNCC
-              GROUP BY sp.MaSP, sp.TenSP, sp.SL
-              ORDER BY sp.TenSP ASC
+            SELECT sp.MaSP, sp.TenSP, k.SLTon, 
+                   GROUP_CONCAT(DISTINCT nc.TenNCC SEPARATOR ', ') AS NhaCungCap
+            FROM SanPham sp
+            LEFT JOIN Kho k ON sp.MaSP = k.MaSP
+            LEFT JOIN NhapHang nh ON sp.MaSP = nh.MaSP
+            LEFT JOIN NhaCungCap nc ON nh.MaNCC = nc.MaNCC
+            GROUP BY sp.MaSP, sp.TenSP, k.SLTon
+            ORDER BY sp.TenSP ASC
           ");
           ?>
           <table class="table table-bordered table-striped">
-            <thead class="table-dark text-white">
-              <tr>
-                <th>Mã SP</th>
-                <th>Tên SP</th>
-                <th>Số lượng</th>
-                <th>Nhà cung cấp</th>
-              </tr>
-            </thead>
+            <thead class="table-dark text-white"><tr><th>Mã SP</th><th>Tên SP</th><th>Số lượng tồn</th><th>Nhà cung cấp</th></tr></thead>
             <tbody>
               <?php if($stocks): foreach($stocks as $st): ?>
                 <tr>
                   <td><?=$st['MaSP']?></td>
                   <td><?=$st['TenSP']?></td>
-                  <td><?=$st['SL']?></td>
+                  <td><?=$st['SLTon']?></td>
                   <td><?=$st['NhaCungCap']?></td>
                 </tr>
               <?php endforeach; else: ?>
@@ -281,22 +276,13 @@ new Chart(document.getElementById('chartImport').getContext('2d'), {
 });
 
 // Tồn kho 123
-// Tồn kho
 new Chart(document.getElementById('chartStock').getContext('2d'), {
   type: 'bar',
   data: {
     labels: [<?php foreach($stocks as $st) echo "'".$st['TenSP']."',"; ?>],
-    datasets: [{
-      label: 'Số lượng',
-      data: [<?php foreach($stocks as $st) echo $st['SL'].","; ?>],
-      backgroundColor: 'rgba(153, 102, 255, 0.6)'
-    }]
+    datasets: [{ label: 'Số lượng tồn', data: [<?php foreach($stocks as $st) echo $st['SLTon'].","; ?>], backgroundColor: 'rgba(153, 102, 255, 0.6)' }]
   },
-  options: {
-    responsive: true,
-    plugins: { legend: { display: false } },
-    scales: { y: { beginAtZero: true } }
-  }
+  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
 });
 </script>
 

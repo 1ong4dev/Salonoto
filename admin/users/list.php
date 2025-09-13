@@ -191,7 +191,6 @@
                                                     <td>' . ($user['TenQuyen'] ?? 'Chưa gán quyền') . '</td>
                                                     <td>' . $user['CreatedAt'] . '</td>
                                                     <td>
-                                                        <a href="?reset-password-id=' . $user['TenTaiKhoan'] . '" class="btn btn-info"><i class="fas fa-key"></i></a>
                                                         <a href="?edit-id=' . $user['TenTaiKhoan'] . '" class="btn btn-warning"><i class="fas fa-marker"></i></a>
                                                     </td>
                                                 </tr>
