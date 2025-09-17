@@ -123,8 +123,9 @@ $items = Database::GetData($sqlItems);
     </div>
 
     <div class="text-center mb-5">
-        <button onclick="window.print();" class="btn btn-primary btn-lg"><b>In hoá đơn</b></button>
+        <button onclick="window.print();" class="btn btn-primary btn-lg"><b>In hoá đơn</b></button> 
     </div>
 </div>
 </body>
 </html>
+<!-- 123 -->/

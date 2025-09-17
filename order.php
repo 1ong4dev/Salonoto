@@ -127,6 +127,13 @@ ob_end_flush(); // gửi output ra
                     <div class="alert alert-danger"><?= $errorMsg ?></div>
                 <?php endif; ?>
 
+                <!-- Thông báo về thời gian thanh toán -->
+                <div class="alert alert-warning mb-4">
+                    <strong><i class="fa fa-clock-o"></i> Lưu ý quan trọng:</strong> 
+                    Đơn hàng sẽ tự động bị hủy nếu bạn không thanh toán trong vòng <strong>15 phút</strong> kể từ khi tạo đơn.
+                    Vui lòng hoàn tất thanh toán sớm nhất có thể.
+                </div>
+
                 <!-- Thông tin người đặt -->
                 <div class="payment-card mb-4">
                     <h2>Thông tin người đặt</h2>

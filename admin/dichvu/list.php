@@ -11,12 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($action == 'add') {
         $name = $_POST['name'] ?? '';
         $status = $_POST['status'] ?? 'HoatDong';
+        $description = $_POST['description'] ?? '';
+        $price = $_POST['price'] ?? 0;
 
-        if (!empty($name)) {
-            $sql = "INSERT INTO dichvu (TenDichVu, TrangThai) VALUES ('$name','$status')";
+        if (!empty($name) && $price > 0) {
+            $sql = "INSERT INTO dichvu (TenDichVu, TrangThai, MoTa, Gia) VALUES ('$name','$status','$description',$price)";
             if (Database::NonQuery($sql)) $message = ['type'=>'success','text'=>'Thêm dịch vụ thành công'];
         } else {
-            $message = ['type'=>'warning','text'=>'Tên dịch vụ không được để trống'];
+            $message = ['type'=>'warning','text'=>'Tên dịch vụ không được để trống và giá phải lớn hơn 0'];
         }
     }
 
@@ -25,12 +27,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $id = $_POST['edit_id'] ?? '';
         $name = $_POST['name'] ?? '';
         $status = $_POST['status'] ?? 'HoatDong';
+        $description = $_POST['description'] ?? '';
+        $price = $_POST['price'] ?? 0;
 
-        if (!empty($name) && $id) {
-            $sql = "UPDATE dichvu SET TenDichVu='$name', TrangThai='$status' WHERE MaDichVu=$id";
+        if (!empty($name) && $id && $price > 0) {
+            $sql = "UPDATE dichvu SET TenDichVu='$name', TrangThai='$status', MoTa='$description', Gia=$price WHERE MaDichVu=$id";
             if (Database::NonQuery($sql)) $message = ['type'=>'success','text'=>'Cập nhật dịch vụ thành công'];
         } else {
-            $message = ['type'=>'warning','text'=>'Tên dịch vụ không được để trống'];
+            $message = ['type'=>'warning','text'=>'Tên dịch vụ không được để trống và giá phải lớn hơn 0'];
         }
     }
 }
@@ -51,6 +55,11 @@ function ServiceStatusBadge($status) {
         case 'KhongHoatDong': return '<span class="badge bg-danger">Không hoạt động</span>';
         default: return '<span class="badge bg-secondary">Không xác định</span>';
     }
+}
+
+// Hàm format giá tiền
+function FormatPrice($price) {
+    return number_format($price, 0, '.', ',') . ' VNĐ';
 }
 ?>
 
@@ -74,7 +83,7 @@ function ServiceStatusBadge($status) {
 
         <!-- Modal Thêm dịch vụ -->
         <div class="modal fade" id="modal-add" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-scrollable" style="max-width: 500px">
+            <div class="modal-dialog modal-dialog-scrollable" style="max-width: 600px">
                 <form class="modal-content" method="POST">
                     <div class="modal-header bg-primary">
                         <h5 class="modal-title">Thêm dịch vụ</h5>
@@ -82,8 +91,16 @@ function ServiceStatusBadge($status) {
                     </div>
                     <div class="modal-body">
                         <div class="form-group">
-                            <label>Tên dịch vụ</label>
-                            <input type="text" name="name" class="form-control">
+                            <label>Tên dịch vụ <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Mô tả</label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="Mô tả chi tiết về dịch vụ..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Giá (VNĐ) <span class="text-danger">*</span></label>
+                            <input type="number" name="price" class="form-control" min="1" step="0.01" required>
                         </div>
                         <div class="form-group">
                             <label>Trạng thái</label>
@@ -103,7 +120,7 @@ function ServiceStatusBadge($status) {
 
         <!-- Modal Sửa dịch vụ -->
         <div class="modal fade" id="modal-edit" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-scrollable" style="max-width: 500px">
+            <div class="modal-dialog modal-dialog-scrollable" style="max-width: 600px">
                 <form class="modal-content" method="POST">
                     <input type="hidden" name="edit_id" id="edit_id" value="">
                     <div class="modal-header bg-primary">
@@ -116,8 +133,16 @@ function ServiceStatusBadge($status) {
                             <input type="text" id="edit_code" class="form-control" disabled>
                         </div>
                         <div class="form-group">
-                            <label>Tên dịch vụ</label>
-                            <input type="text" name="name" id="edit_name" class="form-control">
+                            <label>Tên dịch vụ <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="edit_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Mô tả</label>
+                            <textarea name="description" id="edit_description" class="form-control" rows="3" placeholder="Mô tả chi tiết về dịch vụ..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Giá (VNĐ) <span class="text-danger">*</span></label>
+                            <input type="number" name="price" id="edit_price" class="form-control" min="1" step="0.01" required>
                         </div>
                         <div class="form-group">
                             <label>Trạng thái</label>
@@ -153,8 +178,10 @@ function ServiceStatusBadge($status) {
                         <table class="table table-hover table-bordered">
                             <thead class="table-warning">
                                 <tr>
-                                    <th>Mã dịch vụ</th>
+                                    <th>Mã DV</th>
                                     <th>Tên dịch vụ</th>
+                                    <th>Mô tả</th>
+                                    <th>Giá</th>
                                     <th>Trạng thái</th>
                                     <th width="120">Công cụ</th>
                                 </tr>
@@ -174,11 +201,15 @@ function ServiceStatusBadge($status) {
                                         echo '<tr>
                                             <th>'.$dv['MaDichVu'].'</th>
                                             <td>'.$dv['TenDichVu'].'</td>
+                                            <td>'.($dv['MoTa'] ? substr($dv['MoTa'], 0, 50).'...' : '<em>Không có mô tả</em>').'</td>
+                                            <td><strong>'.FormatPrice($dv['Gia']).'</strong></td>
                                             <td>'.ServiceStatusBadge($dv['TrangThai']).'</td>
                                             <td>
                                                 <button class="btn btn-warning btn-edit" 
                                                     data-id="'.$dv['MaDichVu'].'" 
                                                     data-name="'.htmlspecialchars($dv['TenDichVu'], ENT_QUOTES).'" 
+                                                    data-description="'.htmlspecialchars($dv['MoTa'] ?? '', ENT_QUOTES).'"
+                                                    data-price="'.$dv['Gia'].'"
                                                     data-status="'.$dv['TrangThai'].'">
                                                     <i class="fas fa-marker"></i>
                                                 </button>
@@ -226,11 +257,15 @@ $(document).ready(function(){
     $('.btn-edit').click(function(){
         var id = $(this).data('id');
         var name = $(this).data('name');
+        var description = $(this).data('description');
+        var price = $(this).data('price');
         var status = $(this).data('status');
 
         $('#edit_id').val(id);
         $('#edit_code').val(id);
         $('#edit_name').val(name);
+        $('#edit_description').val(description);
+        $('#edit_price').val(price);
         $('#edit_status').val(status);
 
         $('#modal-edit').modal('show');

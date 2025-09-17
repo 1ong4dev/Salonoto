@@ -289,9 +289,6 @@ AutoCreatePhieuXuatForConfirmedOrders();
                                     class="form-control">
                                 <div class="input-group-append">
                                     <button class="btn btn-outline-info" type="submit"><i class="fas fa-search"></i></button>
-                                    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-add">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
                                 </div>
                             </div>
                         </form>
@@ -400,6 +397,20 @@ AutoCreatePhieuXuatForConfirmedOrders();
                     </div>
                 </div>
             </div>
+                <!-- PHÂN TRANG -->
+                <div class="row my-2 d-flex-between">
+                    <div>Hiển thị từ <?=$pager['StartPage']?> đến <?=$pager['EndPage']?> của <?=$pager['TotalItems']?> bản ghi</div>
+                    <ul class="pagination">
+                    <?php
+                         for ($i = 1; $i <= $pager['TotalPages']; $i++) {
+                                $active = $page == $i ? 'active' : '';
+                                echo '<li class="page-item ' . $active . '">
+                                    <a class="page-link" href="?page=' . $i . '">' . $i . '</a>
+                                </li>';
+                            }
+                    ?>
+                    </ul>
+                </div>
         </div>
     </section>
 </div>

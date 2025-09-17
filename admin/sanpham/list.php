@@ -367,7 +367,6 @@ if (isset($_GET['del-id'])) {
                                                 <th>Tính năng</th>
                                                 <th>Giá</th>
                                                 <th>Khuyến mãi</th>
-                                                <th>Số lượng</th>
                                                 <th>Loại</th>
                                                 <th>Bảo hành (năm)</th>
                                                 <th width="200">Công cụ</th>
@@ -401,7 +400,6 @@ if (isset($_GET['del-id'])) {
                                                         <td>' . ($sp['TinhNang'] ?? '-') . '</td>
                                                         <td>' . Helper::Currency($sp['Gia']) . '</td>
                                                         <td>' . ($sp['GiaKhuyenMai'] ? Helper::Currency($sp['GiaKhuyenMai']) : '-') . '</td>
-                                                        <td>' . ($sp['SL'] ?? 0) . '</td>
                                                         <td>' . $sp['TenLoaiSP'] . '</td>
                                                         <td>' . ($sp['ThoiGianBaoHanh'] ?? 0) . '</td>
                                                         <td>

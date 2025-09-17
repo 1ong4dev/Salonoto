@@ -8,6 +8,9 @@ if (!isset($_SESSION['TenTaiKhoan'])) {
     exit;
 }
 
+// Thiết lập múi giờ Việt Nam
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+
 // Lấy dữ liệu người dùng
 $user = Database::GetData("SELECT * FROM users WHERE TenTaiKhoan = '" . $_SESSION['TenTaiKhoan'] . "'", ['row' => 0]);
 
@@ -18,7 +21,7 @@ $orders = Database::GetData("
     ORDER BY CreatedAt DESC
 ");
 
-// Lấy chi tiết đơn hàng cho mỗi đơn
+// Lấy chi tiết đơn hàng cho mỗi đơn và kiểm tra trạng thái thanh toán
 foreach ($orders as &$order) {
     $orderId = $order['MaDonDatHang'];
     $order['ChiTiet'] = Database::GetData("
@@ -27,6 +30,16 @@ foreach ($orders as &$order) {
         INNER JOIN sanpham s ON c.MaSP = s.MaSP
         WHERE c.MaDonDatHang = '$orderId'
     ");
+    
+    // Kiểm tra xem đơn hàng đã thanh toán chưa
+    $paymentCheck = Database::GetData("SELECT MaTT FROM thanhtoan WHERE MaDonDatHang=$orderId");
+    $order['DaThanhToan'] = ($paymentCheck && count($paymentCheck) > 0);
+    
+    // Kiểm tra thời gian còn lại để thanh toán (15 phút)
+    $createdTime = strtotime($order['CreatedAt']);
+    $currentTime = time();
+    $timeElapsed = $currentTime - $createdTime;
+    $order['ConThoiGianThanhToan'] = ($timeElapsed < 15 * 60); // 15 phút = 900 giây
 }
 
 // Xử lý hủy dịch vụ
@@ -269,6 +282,14 @@ function ServiceStatusBadge($status) {
                             onclick="showOrderDetail('<?=$order['MaDonDatHang']?>')">
                             <i class="fas fa-eye"></i>
                         </button>
+
+                        <!-- Nút thanh toán - chỉ hiển thị khi: chưa thanh toán, chưa hủy, còn trong 15 phút -->
+                        <?php if (!$order['DaThanhToan'] && $order['TrangThai'] != 'Huy' && $order['ConThoiGianThanhToan']): ?>
+                            <a href="pay.php?MaDonDatHang=<?=$order['MaDonDatHang']?>" 
+                            class="btn btn-warning btn-sm" title="Thanh toán">
+                                <i class="fas fa-credit-card"></i>
+                            </a>
+                        <?php endif; ?>
 
                         <!-- Nút in chỉ hiển thị khi đơn đã hoàn thành -->
                         <?php if ($order['TrangThai'] == 'DaHoanThanh'): ?>
